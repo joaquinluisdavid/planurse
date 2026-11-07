@@ -1,0 +1,74 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: #ffffff;
+  --color-card-foreground: var(--foreground);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--foreground);
+  --color-primary: #195b50;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #e9efeb;
+  --color-secondary-foreground: #195b50;
+  --color-muted: #f1f1ec;
+  --color-muted-foreground: #59635f;
+  --color-accent: #e9efeb;
+  --color-accent-foreground: #195b50;
+  --color-destructive: #b42332;
+  --color-border: #dedfd6;
+  --color-input: #b9c1b8;
+  --color-ring: #195b50;
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+:root {
+  --background: #f7f7f2;
+  --foreground: #25332e;
+  --radius: 0.75rem;
+  font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground m-0 min-w-80;
+  }
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    @apply focus-visible:outline-ring outline-offset-4 focus-visible:outline-2;
+  }
+  button {
+    @apply cursor-pointer disabled:cursor-not-allowed;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply tracking-tight;
+  }
+  input,
+  select {
+    @apply min-h-11;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
