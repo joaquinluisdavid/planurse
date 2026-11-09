@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Sprout, ArrowRight } from 'lucide-react'
+import { Sprout, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { SafetyNotice } from '@/components/SafetyNotice'
@@ -38,6 +38,7 @@ export function AccountEntryPage({
 	const [selected, setSelected] = useState<UserRole>('new-rn')
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
+	const [passwordVisible, setPasswordVisible] = useState(false)
 	const [busy, setBusy] = useState(false)
 	const [message, setMessage] = useState<string | null>(null)
 	const [error, setError] = useState<string | null>(null)
@@ -95,6 +96,12 @@ export function AccountEntryPage({
 				const { data, error: authError } = await supabase.auth.signUp({
 					email: email.trim(),
 					password,
+					options: {
+						emailRedirectTo: new URL(
+							import.meta.env.BASE_URL,
+							window.location.origin,
+						).toString(),
+					},
 				})
 				if (authError) throw authError
 				if (data.session) navigate('/onboarding', { replace: true })
@@ -257,24 +264,39 @@ export function AccountEntryPage({
 											? 'New password'
 											: 'Password'}
 									</label>
-									<input
-										id="account-password"
-										type="password"
-										autoComplete={
-											mode === 'signup'
-												? 'new-password'
-												: mode === 'update-password'
-												? 'new-password'
-												: 'current-password'
-										}
-										required
-										minLength={8}
-										maxLength={128}
-										value={password}
-										onChange={(event) => setPassword(event.target.value)}
-										className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
-										disabled={busy || !configured}
-									/>
+									<div className="relative">
+										<input
+											id="account-password"
+											type={passwordVisible ? 'text' : 'password'}
+											autoComplete={
+												mode === 'signup'
+													? 'new-password'
+													: mode === 'update-password'
+														? 'new-password'
+														: 'current-password'
+											}
+											required
+											minLength={8}
+											maxLength={128}
+											value={password}
+											onChange={(event) => setPassword(event.target.value)}
+											className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 pr-12 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+											disabled={busy || !configured}
+										/>
+										<button
+											type="button"
+											className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-r-md focus-visible:ring-[3px] focus-visible:outline-none"
+											aria-label={passwordVisible ? 'Hide password' : 'Show password'}
+											aria-pressed={passwordVisible}
+											onClick={() => setPasswordVisible((visible) => !visible)}
+										>
+											{passwordVisible ? (
+												<EyeOff aria-hidden="true" className="size-4" />
+											) : (
+												<Eye aria-hidden="true" className="size-4" />
+											)}
+										</button>
+									</div>
 									<p className="text-muted-foreground text-xs">
 										Use at least 8 characters.
 									</p>

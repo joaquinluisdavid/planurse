@@ -74,6 +74,24 @@ describe('authenticated account boundary', () => {
     await user.click(await screen.findByRole('link', { name: 'Forgot password?' }))
     expect(await screen.findByRole('heading', { name: 'Reset your password.' })).toBeInTheDocument()
   })
+  it('toggles password visibility on the account form', async () => {
+    const { user } = mount('/signup', repository(), {
+      user: null,
+      profile: null,
+      configured: true,
+    })
+    const password = await screen.findByLabelText('Password')
+    await user.type(password, 'correct-horse-battery')
+    expect(password).toHaveAttribute('type', 'password')
+    await user.click(screen.getByRole('button', { name: 'Show password' }))
+    expect(password).toHaveAttribute('type', 'text')
+    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await user.click(screen.getByRole('button', { name: 'Hide password' }))
+    expect(password).toHaveAttribute('type', 'password')
+  })
 })
 
 describe('planner interactions with mocked data access', () => {

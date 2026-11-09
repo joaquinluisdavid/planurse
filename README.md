@@ -22,10 +22,14 @@ this repository.
   `supabase/migrations/20261109000000_initial_private_workspace.sql` in the
   Supabase SQL editor.
 4. In Supabase Auth URL configuration, set the local site URL to
-   `http://localhost:5173` and allow `/update-password` as a redirect URL. Add
-   the production HTTPS origin and its password-update redirect before deploy.
-   Configure email confirmation and password policies appropriate for your
-   project.
+  `http://localhost:5173` and allow `http://localhost:5173/` and
+  `http://localhost:5173/update-password` as redirect URLs. For GitHub Pages,
+  set the Site URL to `https://joaquinluisdavid.github.io/planurse/` and allow
+  both that exact URL and
+  `https://joaquinluisdavid.github.io/planurse/update-password`. The sign-up
+  confirmation callback is built from Vite's deployed base path, so it returns
+  to `/planurse/`, not the repository root or localhost. Configure email
+  confirmation and password policies appropriate for your project.
 5. Run the app and create two separate accounts. Confirm the email if enabled,
    complete onboarding, and test the isolation checklist below before using real
    accounts. Use fictional/non-identifying work content only.
@@ -110,6 +114,7 @@ React Router URLs, and deploys `dist` to Pages.
   repository variables `VITE_SUPABASE_URL` and
   `VITE_SUPABASE_PUBLISHABLE_KEY`. These are public client values embedded in
   the site bundle; never use a Supabase `service_role` or secret key here.
+  Local `.env` values are not used by a GitHub Actions deployment.
 3. Push to `main` (or manually run **Deploy Planurse to GitHub Pages** from the
   Actions tab). The deployment URL is
   `https://joaquinluisdavid.github.io/planurse/`.
