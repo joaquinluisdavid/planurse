@@ -13,6 +13,7 @@ const ShiftsPage = lazy(() => import('@/pages/ShiftsPage'))
 const NewShiftPage = lazy(() => import('@/pages/NewShiftPage'))
 const ShiftPage = lazy(() => import('@/pages/ShiftPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const ProfilePage = lazy(() => import('@/pages/ProfilePage'))
 const ReflectionSamplesPage = lazy(
   () => import('@/pages/ReflectionSamplesPage'),
 )
@@ -44,6 +45,7 @@ export function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/shifts" element={<ShiftsPage />} />
           <Route path="/shifts/new" element={<NewShiftPage />} />
           <Route path="/shifts/:shiftId" element={<ShiftPage />} />

@@ -3,6 +3,7 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarDays,
+  UserRound,
   NotebookPen,
   BookOpen,
   Settings,
@@ -11,7 +12,6 @@ import {
   Sprout,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Sheet,
   SheetContent,
@@ -76,7 +76,9 @@ export function AppLayout() {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const roleLabel =
-    profile?.role === 'student' ? 'Nursing student' : 'New graduate RN'
+    profile?.role === 'student-nurse' ? 'Student Nurse' : 'Registered Nurse'
+  const displayName =
+    profile?.nickname.trim() || profile?.firstName || user?.email
   async function exitAccount() {
     setSignOutError(null)
     try {
@@ -101,15 +103,13 @@ export function AppLayout() {
         </p>
         <Navigation />
         <div className="mt-auto">
-          <div className="mb-5 rounded-xl border bg-white p-4">
-            <p className="text-sm font-semibold">Room to grow.</p>
-            <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-              One organized shift at a time.
-            </p>
-            <Badge variant="secondary" className="mt-3">
-              Signed-in account
-            </Badge>
-          </div>
+          <NavLink
+            to="/profile"
+            className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
+          >
+            <UserRound aria-hidden="true" className="size-5" />
+            My Profile
+          </NavLink>
           <NavLink
             to="/settings"
             className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
@@ -132,22 +132,32 @@ export function AppLayout() {
           <div className="lg:hidden">
             <Brand />
           </div>
-          <p className="text-muted-foreground hidden text-sm lg:block">
-            A little structure. Room to breathe.
-          </p>
+          <div className="hidden flex-1 lg:block" aria-hidden="true" />
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className="hidden sm:inline-flex">
-              Account workspace
-            </Badge>
             <div className="hidden items-center gap-3 lg:flex">
-              <div className="bg-secondary text-primary flex size-9 items-center justify-center rounded-full text-sm font-semibold">
-                {(user?.email?.[0] ?? 'A').toUpperCase()}
-              </div>
+              {profile?.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt=""
+                  className="size-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="bg-secondary text-primary flex size-9 items-center justify-center rounded-full text-sm font-semibold">
+                  {(displayName?.[0] ?? 'A').toUpperCase()}
+                </div>
+              )}
               <div>
-                <p className="max-w-52 truncate text-sm font-semibold">
-                  {user?.email}
+                <Link
+                  to="/profile"
+                  aria-label="Open My Profile"
+                  className="max-w-52 truncate text-sm font-semibold hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
+                >
+                  {displayName}
+                </Link>
+                <p className="text-muted-foreground text-xs">
+                  {roleLabel}
+                  {profile?.position ? ` · ${profile.position}` : ''}
                 </p>
-                <p className="text-muted-foreground text-xs">{roleLabel}</p>
               </div>
             </div>
             <Sheet open={open} onOpenChange={setOpen}>
@@ -169,6 +179,14 @@ export function AppLayout() {
                   </SheetDescription>
                 </SheetHeader>
                 <Navigation close={() => setOpen(false)} />
+                <NavLink
+                  to="/profile"
+                  onClick={() => setOpen(false)}
+                  className="flex min-h-12 items-center gap-3 px-3"
+                >
+                  <UserRound aria-hidden="true" className="size-5" />
+                  My Profile
+                </NavLink>
                 <NavLink
                   to="/settings"
                   onClick={() => setOpen(false)}

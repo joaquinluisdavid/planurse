@@ -33,19 +33,32 @@ function mount(
   source = repository(),
   authOverrides: Partial<AuthValue> = {},
 ) {
+  const { removeAvatar: overrideRemoveAvatar, ...otherAuthOverrides } =
+    authOverrides
   const authValue: AuthValue = {
     user: {
       id: '00000000-0000-4000-8000-000000000001',
       email: 'learner@example.test',
     } as User,
-    profile: { userId: '00000000-0000-4000-8000-000000000001', role: 'new-rn' },
+    profile: {
+      userId: '00000000-0000-4000-8000-000000000001',
+      role: 'registered-nurse',
+      firstName: 'Alex',
+      lastName: 'Example',
+      nickname: 'Alex',
+      position: 'Staff Nurse',
+      avatarPath: null,
+      avatarUrl: null,
+    },
     loading: false,
     error: null,
     configured: true,
     refreshProfile: vi.fn(async () => {}),
     saveProfile: vi.fn(async () => {}),
+    uploadAvatar: vi.fn(async () => {}),
     signOut: vi.fn(async () => {}),
-    ...authOverrides,
+    ...otherAuthOverrides,
+    removeAvatar: overrideRemoveAvatar ?? vi.fn(async () => {}),
   }
   render(
     <MemoryRouter initialEntries={[path]}>
@@ -83,6 +96,73 @@ describe('authenticated account boundary', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Save profile' }),
+    ).toBeInTheDocument()
+  })
+  it('collects a complete profile and the Student Nurse role during onboarding', async () => {
+    const saveProfile = vi.fn(async () => {})
+    const { user } = mount('/onboarding', repository(), {
+      profile: null,
+      saveProfile,
+    })
+    await screen.findByRole('heading', { name: 'Make room for learning.' })
+    await user.click(screen.getByRole('radio', { name: /Student Nurse/ }))
+    await user.type(screen.getByLabelText('First name'), 'Jordan')
+    await user.type(screen.getByLabelText('Last name'), 'Example')
+    await user.type(screen.getByLabelText(/Nickname/), 'Jordy')
+    await user.type(screen.getByLabelText(/Current position/), 'Student Nurse')
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+    expect(saveProfile).toHaveBeenCalledWith({
+      role: 'student-nurse',
+      firstName: 'Jordan',
+      lastName: 'Example',
+      nickname: 'Jordy',
+      position: 'Student Nurse',
+    })
+  })
+  it('edits profile details and uploads a supported avatar picture', async () => {
+    const uploadAvatar = vi.fn(async () => {})
+    const removeAvatar = vi.fn(async () => {})
+    const { user } = mount('/profile', repository(), {
+      uploadAvatar,
+      removeAvatar,
+      profile: {
+        userId: '00000000-0000-4000-8000-000000000001',
+        role: 'registered-nurse',
+        firstName: 'Alex',
+        lastName: 'Example',
+        nickname: 'Alex',
+        position: 'Staff Nurse',
+        avatarPath: '00000000-0000-4000-8000-000000000001/avatar.png',
+        avatarUrl: 'https://example.test/avatar.png',
+      },
+    })
+    await screen.findByRole('heading', { name: 'My Profile' })
+    expect(screen.getByLabelText('First name')).toHaveValue('Alex')
+    expect(
+      screen.getByRole('button', { name: 'Change profile picture' }),
+    ).toBeInTheDocument()
+    await user.clear(screen.getByLabelText(/Nickname/))
+    await user.type(screen.getByLabelText(/Nickname/), 'A')
+    await user.selectOptions(
+      screen.getByLabelText('Professional role'),
+      'student-nurse',
+    )
+    await user.click(screen.getByRole('button', { name: 'Save profile' }))
+    expect(uploadAvatar).not.toHaveBeenCalled()
+    const picture = new File(['image'], 'profile.png', { type: 'image/png' })
+    await user.upload(screen.getByLabelText('Choose profile picture'), picture)
+    expect(uploadAvatar).toHaveBeenCalledWith(picture)
+    await user.click(
+      screen.getByRole('button', { name: 'Remove profile picture' }),
+    )
+    expect(removeAvatar).toHaveBeenCalledOnce()
+  })
+  it('opens My Profile from the account name in the desktop header', async () => {
+    const { user } = mount('/dashboard')
+    await screen.findByRole('heading', { name: 'Plan at your own pace.' })
+    await user.click(screen.getByRole('link', { name: 'Open My Profile' }))
+    expect(
+      await screen.findByRole('heading', { name: 'My Profile' }),
     ).toBeInTheDocument()
   })
   it('shows account creation and password recovery links on welcome and sign in', async () => {

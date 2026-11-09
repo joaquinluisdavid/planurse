@@ -1,6 +1,6 @@
 # Planurse
 
-A calm calendar and learning planner for nursing students and new graduate hospital RNs.
+A calm calendar and learning planner for Registered Nurses and Student Nurses.
 **Workflow and organization only—not clinical decision support or an official
 medical record. Do not enter patient-identifying information.**
 
@@ -18,10 +18,11 @@ this repository.
 2. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_PUBLISHABLE_KEY`. Never use a `service_role` key in a Vite
    variable or browser bundle. `.env` is ignored by Git.
-3. In the Supabase SQL editor, apply all three migrations in order:
+3. In the Supabase SQL editor, apply all four migrations in order:
    `supabase/migrations/20261109000000_initial_private_workspace.sql`, then
    `supabase/migrations/20261110000000_calendar_planning.sql`, then
-   `supabase/migrations/20261111000000_cases_handled.sql`.
+   `supabase/migrations/20261111000000_cases_handled.sql`, then
+   `supabase/migrations/20261112000000_profile_details.sql`.
 4. In Supabase Auth URL configuration, set the local site URL to
    `http://localhost:5173` and allow `http://localhost:5173/` and
    `http://localhost:5173/update-password` as redirect URLs. For GitHub Pages,
@@ -32,11 +33,11 @@ this repository.
    to `/planurse/`, not the repository root or localhost. Configure email
    confirmation and password policies appropriate for your project.
 5. Run the app and create two separate accounts. Confirm the email if enabled,
-   complete onboarding, and test the isolation checklist below before using real
+   complete profile onboarding, and test the isolation checklist below before using real
    accounts. Use fictional/non-identifying work content only.
 
 If sign-in returns PostgREST error `PGRST205` for `public.profiles`, the schema
-is missing or its API cache is stale: apply all three migrations in order in the SQL
+is missing or its API cache is stale: apply all four migrations in order in the SQL
 Editor, wait for them to finish, then reload the app. The initial migration
 requests a PostgREST schema-cache refresh at the end.
 
@@ -53,7 +54,9 @@ project also needs the migration before profiles and workspace queries work.
 
 - Supabase Auth sign-up, sign-in, email confirmation, sign-out, reset email, and
   password update.
-- Authenticated profile onboarding (`student` / `new-rn`).
+- Authenticated profile onboarding and My Profile editing: private avatar picture,
+  first/last name, display nickname, current position, and role (Registered Nurse
+  or Student Nurse).
 - Date-first monthly calendar with scheduled responsibilities, flexible
   reminders, completion, drag-to-reschedule, and a keyboard/mobile edit flow.
 - Cases handled are logged from a selected calendar day using a broad work
@@ -91,6 +94,10 @@ only a fixed broad category, date, optional calendar link, and optional general
 learning takeaway. It deliberately has no patient name, patient ID, room, case
 narrative, diagnosis, or clinical documentation fields. Notes/reflections may
 link to the case entry, with same-owner and same-date checks.
+The profile-details migration extends existing profiles, maps legacy roles to
+Registered Nurse/Student Nurse, and creates a private avatar bucket with owner-
+scoped Storage policies. Profile pictures must be JPG, PNG, or WebP and no larger
+than 2 MB. Avatars are displayed using short-lived signed URLs.
 The legacy handoff table/data are retained in the database for now, but are no
 longer queried or exposed by the app. No destructive data drop is performed.
 
@@ -151,7 +158,7 @@ React Router URLs, and deploys `dist` to Pages.
    `https://joaquinluisdavid.github.io/planurse/` and add that URL plus
    `https://joaquinluisdavid.github.io/planurse/update-password` to the allowed
    redirect URLs. Keep the local development URLs too if needed.
-5. Apply all three database migrations in order and verify two-user RLS
+5. Apply all four database migrations in order and verify two-user RLS
    isolation before using account data. Direct nested routes use the workflow's `404.html` SPA
    fallback. The `public/_redirects` file is for Netlify, not GitHub Pages.
 

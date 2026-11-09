@@ -1,6 +1,6 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { ErrorState, LoadingState } from '@/components/Feedback'
-import { useAuth } from '@/auth/useAuth'
+import { isProfileComplete, useAuth } from '@/auth/useAuth'
 
 export function ProtectedRoute({
   allowIncompleteProfile = false,
@@ -11,9 +11,7 @@ export function ProtectedRoute({
   const location = useLocation()
   if (loading) return <LoadingState />
   if (error)
-    return (
-      <ErrorState message={error} retry={() => void refreshProfile()} />
-    )
+    return <ErrorState message={error} retry={() => void refreshProfile()} />
   if (!user)
     return (
       <Navigate
@@ -22,7 +20,7 @@ export function ProtectedRoute({
         replace
       />
     )
-  if (!allowIncompleteProfile && !profile)
+  if (!allowIncompleteProfile && !isProfileComplete(profile))
     return <Navigate to="/onboarding" replace />
   return <Outlet />
 }

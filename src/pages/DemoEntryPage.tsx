@@ -6,20 +6,20 @@ import { Card, CardContent } from '@/components/ui/card'
 import { SafetyNotice } from '@/components/SafetyNotice'
 import { ErrorState } from '@/components/Feedback'
 import { useAuth } from '@/auth/useAuth'
-import type { UserRole } from '@/auth/useAuth'
+import { isProfileComplete, type UserRole } from '@/auth/useAuth'
 import { supabase } from '@/lib/supabase'
 import { errorMessage } from '@/lib/errors'
 
 const roleChoices: { value: UserRole; label: string; detail: string }[] = [
   {
-    value: 'new-rn',
-    label: 'New graduate RN',
-    detail: 'Orientation and your first year of practice',
+    value: 'registered-nurse',
+    label: 'Registered Nurse',
+    detail: 'For registered nursing professionals',
   },
   {
-    value: 'student',
-    label: 'Nursing student',
-    detail: 'Preparing for clinical rotations',
+    value: 'student-nurse',
+    label: 'Student Nurse',
+    detail: 'For nursing students and clinical placements',
   },
 ]
 
@@ -35,7 +35,13 @@ export function AccountEntryPage({
     | 'update-password'
 }) {
   const { user, profile, loading, configured, saveProfile } = useAuth()
-  const [selected, setSelected] = useState<UserRole>('new-rn')
+  const [selected, setSelected] = useState<UserRole>(
+    profile?.role ?? 'registered-nurse',
+  )
+  const [firstName, setFirstName] = useState(profile?.firstName ?? '')
+  const [lastName, setLastName] = useState(profile?.lastName ?? '')
+  const [nickname, setNickname] = useState(profile?.nickname ?? '')
+  const [position, setPosition] = useState(profile?.position ?? '')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [passwordVisible, setPasswordVisible] = useState(false)
@@ -63,16 +69,20 @@ export function AccountEntryPage({
     )
   if (
     user &&
-    profile &&
+    isProfileComplete(profile) &&
     (mode === 'welcome' || mode === 'login' || mode === 'signup')
   )
     return <Navigate to={from} replace />
-  if (user && !profile && mode === 'welcome')
+  if (user && !isProfileComplete(profile) && mode === 'welcome')
     return <Navigate to="/onboarding" replace />
-  if (user && !profile && (mode === 'login' || mode === 'signup'))
+  if (
+    user &&
+    !isProfileComplete(profile) &&
+    (mode === 'login' || mode === 'signup')
+  )
     return <Navigate to="/onboarding" replace />
   if (mode === 'onboarding' && !user) return <Navigate to="/login" replace />
-  if (mode === 'onboarding' && profile)
+  if (mode === 'onboarding' && isProfileComplete(profile))
     return <Navigate to="/dashboard" replace />
   if (mode === 'update-password' && !user)
     return <Navigate to="/login" replace />
@@ -150,7 +160,13 @@ export function AccountEntryPage({
     setBusy(true)
     setError(null)
     try {
-      await saveProfile(selected)
+      await saveProfile({
+        role: selected,
+        firstName,
+        lastName,
+        nickname,
+        position,
+      })
       navigate('/dashboard', { replace: true })
     } catch (cause) {
       setError(`Cannot save your profile: ${errorMessage(cause)}`)
@@ -233,6 +249,83 @@ export function AccountEntryPage({
                   </label>
                 ))}
               </fieldset>
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <label
+                    htmlFor="profile-first-name"
+                    className="text-sm font-medium"
+                  >
+                    First name
+                  </label>
+                  <input
+                    id="profile-first-name"
+                    required
+                    maxLength={80}
+                    autoComplete="given-name"
+                    value={firstName}
+                    onChange={(event) => setFirstName(event.target.value)}
+                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                    disabled={busy || !configured}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="profile-last-name"
+                    className="text-sm font-medium"
+                  >
+                    Last name
+                  </label>
+                  <input
+                    id="profile-last-name"
+                    required
+                    maxLength={80}
+                    autoComplete="family-name"
+                    value={lastName}
+                    onChange={(event) => setLastName(event.target.value)}
+                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                    disabled={busy || !configured}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="profile-nickname"
+                    className="text-sm font-medium"
+                  >
+                    Nickname{' '}
+                    <span className="text-muted-foreground">
+                      (optional display name)
+                    </span>
+                  </label>
+                  <input
+                    id="profile-nickname"
+                    maxLength={60}
+                    autoComplete="nickname"
+                    value={nickname}
+                    onChange={(event) => setNickname(event.target.value)}
+                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                    disabled={busy || !configured}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label
+                    htmlFor="profile-position"
+                    className="text-sm font-medium"
+                  >
+                    Current position{' '}
+                    <span className="text-muted-foreground">(optional)</span>
+                  </label>
+                  <input
+                    id="profile-position"
+                    maxLength={100}
+                    autoComplete="organization-title"
+                    placeholder="e.g. Staff Nurse"
+                    value={position}
+                    onChange={(event) => setPosition(event.target.value)}
+                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                    disabled={busy || !configured}
+                  />
+                </div>
+              </div>
               <Button
                 type="submit"
                 className="mt-6 h-12 w-full"
