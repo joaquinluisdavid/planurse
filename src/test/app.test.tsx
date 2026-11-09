@@ -2,15 +2,15 @@ import { render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
+import type { User } from '@supabase/supabase-js'
 import { AppRoutes } from '@/App'
-import { DemoSessionProvider } from '@/demo/DemoSessionProvider'
-import { demoSession } from '@/demo/session'
+import { AuthContext, type AuthValue } from '@/auth/useAuth'
 import { WorkspaceProvider } from '@/data/WorkspaceProvider'
-import type { WorkspaceRepository } from '@/data/demoRepository'
-import { createDemoWorkspace } from '@/demo/fixtures'
+import type { WorkspaceRepository } from '@/data/repository'
+import { createWorkspaceFixture } from './workspaceFixture'
 import type { Workspace } from '@/data/models'
 
-function repository(initial = createDemoWorkspace()): WorkspaceRepository {
+function repository(initial = createWorkspaceFixture()): WorkspaceRepository {
   let data = structuredClone(initial)
   return {
     load: vi.fn(async () => data),
@@ -18,67 +18,61 @@ function repository(initial = createDemoWorkspace()): WorkspaceRepository {
       data = change(data)
       return data
     }),
-    reset: vi.fn(async () => {
-      data = createDemoWorkspace()
-      return data
-    }),
   }
+}
+function emptyRecordWorkspace() {
+  const workspace = createWorkspaceFixture()
+  workspace.handoffs = []
+  workspace.reflections = []
+  workspace.learningNotes = []
+  return workspace
 }
 function mount(
   path = '/shifts/shift-current',
   source = repository(),
-  entered = true,
+  authOverrides: Partial<AuthValue> = {},
 ) {
-  if (entered) demoSession.enter('new-rn')
+  const authValue: AuthValue = {
+    user: { id: '00000000-0000-4000-8000-000000000001', email: 'learner@example.test' } as User,
+    profile: { userId: '00000000-0000-4000-8000-000000000001', role: 'new-rn' },
+    loading: false,
+    error: null,
+    configured: true,
+    refreshProfile: vi.fn(async () => {}),
+    saveProfile: vi.fn(async () => {}),
+    signOut: vi.fn(async () => {}),
+    ...authOverrides,
+  }
   render(
     <MemoryRouter initialEntries={[path]}>
-      <DemoSessionProvider>
+      <AuthContext.Provider value={authValue}>
         <WorkspaceProvider repository={source}>
           <AppRoutes />
         </WorkspaceProvider>
-      </DemoSessionProvider>
+      </AuthContext.Provider>
     </MemoryRouter>,
   )
   return { user: userEvent.setup(), source }
 }
 
-describe('demo access boundary', () => {
-  it('redirects protected demo pages to the entry screen', async () => {
-    mount('/dashboard', repository(), false)
-    expect(
-      await screen.findByRole('heading', {
-        name: 'A clearer start to every shift.',
-      }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByText(/Demo entry is not authentication/),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByRole('heading', { name: 'Your day, at a glance.' }),
-    ).not.toBeInTheDocument()
+describe('authenticated account boundary', () => {
+  it('redirects anonymous visitors to actual sign-in', async () => {
+    mount('/dashboard', repository(), { user: null, profile: null, configured: false })
+    expect(await screen.findByRole('heading', { name: 'Welcome back.' })).toBeInTheDocument()
+    expect(screen.getByText('Cloud service setup required.')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Your day, at a glance.' })).not.toBeInTheDocument()
   })
-  it('opens the selected demo perspective and restores the requested route', async () => {
-    const { user } = mount('/shifts/shift-current', repository(), false)
-    await user.click(screen.getByRole('link', { name: /Explore the demo/ }))
-    await user.click(screen.getByRole('radio', { name: /Nursing student/ }))
-    await user.click(
-      screen.getByRole('button', { name: /Open fictional demo/ }),
-    )
-    expect(
-      await screen.findByRole('heading', { name: /shift$/, level: 1 }),
-    ).toBeInTheDocument()
-    expect(demoSession.read()).toBe('student')
+  it('requires account onboarding before opening private workspace routes', async () => {
+    mount('/dashboard', repository(), { profile: null })
+    expect(await screen.findByRole('heading', { name: 'Make room for learning.' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Save profile' })).toBeInTheDocument()
   })
-  it('exits the demo and removes the entry session', async () => {
-    const { user } = mount('/dashboard')
-    await screen.findByRole('heading', { name: 'Your day, at a glance.' })
-    await user.click(screen.getAllByRole('button', { name: 'Exit demo' })[0])
-    expect(
-      await screen.findByRole('heading', {
-        name: 'A clearer start to every shift.',
-      }),
-    ).toBeInTheDocument()
-    expect(demoSession.read()).toBeNull()
+  it('shows account creation and password recovery links on welcome and sign in', async () => {
+    const { user } = mount('/', repository(), { user: null, profile: null, configured: false })
+    expect(screen.getAllByRole('link', { name: 'Create account' })[0]).toHaveAttribute('href', '/signup')
+    await user.click(screen.getAllByRole('link', { name: 'Sign in' })[0])
+    await user.click(await screen.findByRole('link', { name: 'Forgot password?' }))
+    expect(await screen.findByRole('heading', { name: 'Reset your password.' })).toBeInTheDocument()
   })
 })
 
@@ -109,8 +103,8 @@ describe('planner interactions with mocked data access', () => {
       'important',
     )
     await user.selectOptions(
-      within(dialog).getByLabelText('Fictional room'),
-      'Demo room C',
+      within(dialog).getByLabelText('Room shorthand'),
+      'Room C',
     )
     await user.click(within(dialog).getByRole('button', { name: 'Add task' }))
     expect(
@@ -137,38 +131,38 @@ describe('planner interactions with mocked data access', () => {
   it('combines filters and offers a recoverable empty state', async () => {
     const { user } = mount()
     await screen.findByRole('heading', { name: 'Your tasks' })
-    await user.selectOptions(screen.getByLabelText('Room'), 'Demo room A')
+    await user.selectOptions(screen.getByLabelText('Room'), 'Room A')
     await user.selectOptions(screen.getByLabelText('Priority filter'), 'urgent')
     expect(screen.getByText('No tasks match these filters')).toBeInTheDocument()
     await user.click(
       screen.getAllByRole('button', { name: 'Clear filters' })[0],
     )
     expect(
-      screen.getByText('Prepare a fictional handoff outline'),
+      screen.getByText('Prepare a handoff outline'),
     ).toBeInTheDocument()
   })
-  it('validates fictional room codes and makes the new room available to task forms', async () => {
+  it('validates room shorthand and makes it available to task forms', async () => {
     const { user } = mount()
     await screen.findByRole('heading', { name: 'Your tasks' })
     await user.click(screen.getByRole('button', { name: 'Add room' }))
     expect(
       await screen.findByText(
-        'Use 1–12 letters, numbers, or hyphens for a fictional room code.',
+        'Use 1–12 letters, numbers, or hyphens. Do not include patient identifiers.',
       ),
     ).toBeInTheDocument()
-    expect(screen.getByLabelText('Add fictional room code')).toHaveAttribute(
+    expect(screen.getByLabelText('Add room shorthand')).toHaveAttribute(
       'aria-invalid',
       'true',
     )
-    await user.type(screen.getByLabelText('Add fictional room code'), 'd')
+    await user.type(screen.getByLabelText('Add room shorthand'), 'd')
     await user.click(screen.getByRole('button', { name: 'Add room' }))
     await waitFor(() =>
-      expect(screen.getByLabelText('Add fictional room code')).toHaveValue(''),
+      expect(screen.getByLabelText('Add room shorthand')).toHaveValue(''),
     )
     await user.click(screen.getByRole('button', { name: 'Add a task' }))
     expect(
-      within(screen.getByLabelText('Fictional room')).getByRole('option', {
-        name: 'Demo room D',
+      within(screen.getAllByLabelText('Room shorthand')[0]).getByRole('option', {
+        name: 'Room D',
       }),
     ).toBeInTheDocument()
   })
@@ -185,12 +179,12 @@ describe('planner interactions with mocked data access', () => {
       screen.getByText('Confirm the orientation checklist with preceptor'),
     ).toBeInTheDocument()
     expect(
-      screen.queryByText('Prepare a fictional handoff outline'),
+      screen.queryByText('Prepare a handoff outline'),
     ).not.toBeInTheDocument()
   })
   it('edits and deletes a task after confirmation', async () => {
     const { user } = mount()
-    const title = 'Prepare a fictional handoff outline'
+    const title = 'Prepare a handoff outline'
     await user.click(
       await screen.findByRole('button', { name: `Edit task: ${title}` }),
     )
@@ -241,7 +235,7 @@ describe('planner interactions with mocked data access', () => {
     ).toBeInTheDocument()
   })
   it('creates a shift with a controlled date and shift type', async () => {
-    const initial = createDemoWorkspace()
+    const initial = createWorkspaceFixture()
     initial.shifts[0].endedAt = new Date().toISOString()
     const { user, source } = mount('/shifts/new', repository(initial))
     await screen.findByLabelText('Shift type')
@@ -254,7 +248,7 @@ describe('planner interactions with mocked data access', () => {
     expect(source.update).toHaveBeenCalledOnce()
   })
   it('shows completed and unfinished tasks when reopening an ended shift', async () => {
-    const initial = createDemoWorkspace()
+    const initial = createWorkspaceFixture()
     initial.shifts[0].endedAt = new Date().toISOString()
     mount('/shifts/shift-current', repository(initial))
     expect(
@@ -288,6 +282,77 @@ describe('planner interactions with mocked data access', () => {
       screen.queryByRole('checkbox', { name: /A task that will not save/ }),
     ).not.toBeInTheDocument()
   })
+  it('creates, edits, copies, prints, and deletes a fictional handoff draft', async () => {
+    const { user } = mount('/handoffs', repository(emptyRecordWorkspace()))
+    await user.click(await screen.findByRole('link', { name: /New draft/ }))
+    await screen.findByRole('heading', { name: 'New handoff draft' })
+    await user.selectOptions(screen.getByLabelText('Room shorthand'), 'Room B')
+    await user.type(screen.getByLabelText('Situation'), 'A fictional practice outline')
+    await user.type(screen.getByLabelText('Background'), 'General workflow orientation')
+    await user.type(screen.getByLabelText('Assessment'), 'Organization practice only')
+    await user.type(screen.getByLabelText('Recommendation'), 'Discuss the outline with a preceptor')
+    await user.click(screen.getByRole('button', { name: 'Save draft' }))
+    await screen.findByRole('heading', { name: 'Handoff drafts' })
+    expect(await screen.findByText('A fictional practice outline')).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Edit handoff draft for Room B' }))
+    const situation = await screen.findByLabelText('Situation')
+    await user.clear(situation)
+    await user.type(situation, 'Updated fictional practice outline')
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    await screen.findByRole('heading', { name: 'Handoff drafts', level: 1 })
+    expect(await screen.findByText('Updated fictional practice outline')).toBeInTheDocument()
+    const clipboard = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: clipboard } })
+    await user.click(screen.getByRole('button', { name: 'Copy' }))
+    expect(clipboard).toHaveBeenCalledWith(expect.stringContaining('Situation: Updated fictional practice outline'))
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
+    await user.click(screen.getByRole('button', { name: 'Print' }))
+    expect(print).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: 'Delete handoff draft for Room B' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete draft' }))
+    expect(await screen.findByText('No handoff drafts yet')).toBeInTheDocument()
+    print.mockRestore()
+  })
+  it('creates, edits, and deletes post-shift reflections', async () => {
+    const { user } = mount('/reflections', repository(emptyRecordWorkspace()))
+    await user.click(await screen.findByRole('link', { name: /New reflection/ }))
+    await screen.findByRole('heading', { name: 'New reflection' })
+    await user.type(screen.getByLabelText('What went well?'), 'I prepared a clear learning checklist')
+    await user.type(screen.getByLabelText('What felt difficult?'), 'Prioritizing new tasks was difficult')
+    await user.type(screen.getByLabelText('What would you like to review later?'), 'Ask about organizing a check-in')
+    await user.click(screen.getByRole('button', { name: 'Save reflection' }))
+    await screen.findByRole('heading', { name: 'Reflections', level: 1 })
+    expect(await screen.findByText('I prepared a clear learning checklist')).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Edit reflection' }))
+    const wentWell = await screen.findByLabelText('What went well?')
+    await user.clear(wentWell)
+    await user.type(wentWell, 'I used a calmer review routine')
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    await screen.findByRole('heading', { name: 'Reflections', level: 1 })
+    expect(await screen.findByText('I used a calmer review routine')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Delete reflection' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete reflection' }))
+    expect(await screen.findByText('No reflections yet')).toBeInTheDocument()
+  })
+  it('creates, edits, and deletes general learning notes', async () => {
+    const { user } = mount('/learning-notes', repository(emptyRecordWorkspace()))
+    await user.click(await screen.findByRole('link', { name: /New note/ }))
+    await screen.findByRole('heading', { name: 'New learning note' })
+    await user.type(screen.getByLabelText('Topic'), 'Preparing for a learning check-in')
+    await user.type(screen.getByLabelText('Question to explore (optional)'), 'What questions should I bring?')
+    await user.type(screen.getByLabelText('Follow-up reminder (optional)'), 'Bring my notes next week')
+    await user.click(screen.getByRole('button', { name: 'Save note' }))
+    expect(await screen.findByRole('heading', { name: 'Preparing for a learning check-in' })).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Edit Preparing for a learning check-in' }))
+    const topic = await screen.findByLabelText('Topic')
+    await user.clear(topic)
+    await user.type(topic, 'Preparing questions for supervision')
+    await user.click(screen.getByRole('button', { name: 'Save changes' }))
+    expect(await screen.findByRole('heading', { name: 'Preparing questions for supervision' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Delete Preparing questions for supervision' }))
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete note' }))
+    expect(await screen.findByText('No learning notes yet')).toBeInTheDocument()
+  })
 })
 
 describe('loading, error and empty states', () => {
@@ -304,10 +369,10 @@ describe('loading, error and empty states', () => {
     source.load = vi
       .fn()
       .mockRejectedValueOnce(new Error('Offline'))
-      .mockResolvedValue(createDemoWorkspace())
+      .mockResolvedValue(createWorkspaceFixture())
     const { user } = mount('/dashboard', source)
     expect(
-      await screen.findByText('Cannot load demo workspace: Offline'),
+      await screen.findByText('Cannot load your workspace: Offline'),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(
@@ -323,6 +388,7 @@ describe('loading, error and empty states', () => {
         tasks: [],
         handoffs: [],
         reflections: [],
+        learningNotes: [],
       }),
     )
     expect(await screen.findByText('Between shifts')).toBeInTheDocument()

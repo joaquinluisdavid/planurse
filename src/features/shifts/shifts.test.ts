@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createDemoWorkspace } from '@/demo/fixtures'
+import { createWorkspaceFixture } from '@/test/workspaceFixture'
 import {
   addRoom,
   completeTask,
@@ -22,7 +22,7 @@ const values: TaskFormValues = {
 
 describe('shift business logic', () => {
   it('creates, edits, completes, reopens and deletes a task without mutating the original', () => {
-    const initial = createDemoWorkspace(now)
+    const initial = createWorkspaceFixture(now)
     const added = saveTask(initial, 'shift-current', values, 'new', false, now)
     expect(initial.tasks).toHaveLength(6)
     expect(added.tasks.at(-1)).toMatchObject({
@@ -46,7 +46,7 @@ describe('shift business logic', () => {
     expect(deleteTask(reopened, 'shift-current', 'new').tasks).toHaveLength(6)
   })
   it('requires acknowledgement and preserves incomplete tasks when ending a shift', () => {
-    const initial = createDemoWorkspace(now)
+    const initial = createWorkspaceFixture(now)
     expect(() => endShift(initial, 'shift-current', false, now)).toThrow(
       'Acknowledge',
     )
@@ -64,7 +64,7 @@ describe('shift business logic', () => {
     )
   })
   it('prevents two active shifts and future shift starts', () => {
-    const initial = createDemoWorkspace(now)
+    const initial = createWorkspaceFixture(now)
     expect(() =>
       startShift(initial, { type: 'night', date: '2026-11-07' }, 'new', now),
     ).toThrow('current shift')
@@ -78,17 +78,17 @@ describe('shift business logic', () => {
     ).toMatchObject({ type: 'night', endedAt: null })
   })
   it('accepts fictional codes, rejects duplicates and rejects unrelated rooms', () => {
-    const initial = createDemoWorkspace(now)
+    const initial = createWorkspaceFixture(now)
     expect(
       addRoom(initial, 'shift-current', 'd').shifts[0].patientLabels,
-    ).toContain('Demo room D')
+    ).toContain('Room D')
     expect(() => addRoom(initial, 'shift-current', 'A')).toThrow('already')
     expect(() => addRoom(initial, 'shift-current', 'Room / Name')).toThrow()
     expect(() =>
       saveTask(
         initial,
         'shift-current',
-        { ...values, patientLabel: 'Demo room Z' },
+        { ...values, patientLabel: 'Room Z' },
         'new',
         false,
       ),
@@ -100,7 +100,7 @@ describe('shift business logic', () => {
 })
 
 describe('task filtering and dates', () => {
-  const tasks = createDemoWorkspace(now).tasks.filter(
+  const tasks = createWorkspaceFixture(now).tasks.filter(
     (task) => task.shiftId === 'shift-current',
   )
   it('combines room, priority, completion and due filters', () => {
@@ -109,7 +109,7 @@ describe('task filtering and dates', () => {
         tasks,
         {
           ...defaultFilters,
-          patient: 'Demo room A',
+          patient: 'Room A',
           priority: 'routine',
           due: 'next-hour',
         },
@@ -167,7 +167,7 @@ describe('task filtering and dates', () => {
     ).toBe(false)
     const overnight = { ...values, dueAt: '2026-11-08T02:30' }
     const saved = saveTask(
-      createDemoWorkspace(now),
+      createWorkspaceFixture(now),
       'shift-current',
       overnight,
       'night-task',

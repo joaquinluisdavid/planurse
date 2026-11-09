@@ -69,7 +69,7 @@ export default function ShiftsPage() {
                       <p className="text-muted-foreground mt-1 text-xs">
                         {tasks.filter((task) => task.completedAt).length}/
                         {tasks.length} tasks completed ·{' '}
-                        {shift.patientLabels.length} fictional rooms
+                        {shift.patientLabels.length} rooms
                       </p>
                     </div>
                     <ArrowRight
@@ -84,7 +84,7 @@ export default function ShiftsPage() {
       ) : (
         <EmptyState
           title="No shifts yet"
-          description="Start your first fictional shift and build a task list."
+          description="Start your first shift and build a task list."
           action={
             <Button asChild>
               <Link to="/shifts/new">Start a shift</Link>

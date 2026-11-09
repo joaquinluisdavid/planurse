@@ -1,7 +1,8 @@
-import { DEMO_USER_ID, type Workspace } from '@/data/models'
+import type { Workspace } from '@/data/models'
 import { localDate } from '@/lib/dates'
 
-export function createDemoWorkspace(now = new Date()): Workspace {
+export function createWorkspaceFixture(now = new Date()): Workspace {
+  const ownerId = '00000000-0000-4000-8000-000000000001'
   const iso = (offsetMinutes: number) =>
     new Date(now.getTime() + offsetMinutes * 60_000).toISOString()
   const yesterday = new Date(now.getTime() - 86_400_000)
@@ -10,27 +11,27 @@ export function createDemoWorkspace(now = new Date()): Workspace {
     shifts: [
       {
         id: 'shift-current',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         type: now.getHours() >= 19 || now.getHours() < 7 ? 'night' : 'day',
         date: localDate(now),
         startedAt: iso(-90),
         endedAt: null,
-        patientLabels: ['Demo room A', 'Demo room B', 'Demo room C'],
+        patientLabels: ['Room A', 'Room B', 'Room C'],
       },
       {
         id: 'shift-previous',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         type: 'day',
         date: localDate(yesterday),
         startedAt: iso(-1800),
         endedAt: iso(-1440),
-        patientLabels: ['Demo room A'],
+        patientLabels: ['Room A'],
       },
     ],
     tasks: [
       {
         id: 'task-1',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         shiftId: 'shift-current',
         title: 'Confirm the orientation checklist with preceptor',
         patientLabel: '',
@@ -41,10 +42,10 @@ export function createDemoWorkspace(now = new Date()): Workspace {
       },
       {
         id: 'task-2',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         shiftId: 'shift-current',
-        title: 'Prepare a fictional handoff outline',
-        patientLabel: 'Demo room A',
+        title: 'Prepare a handoff outline',
+        patientLabel: 'Room A',
         priority: 'routine',
         dueAt: iso(35),
         completedAt: null,
@@ -52,10 +53,10 @@ export function createDemoWorkspace(now = new Date()): Workspace {
       },
       {
         id: 'task-3',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         shiftId: 'shift-current',
         title: 'Check in about today’s learning goals',
-        patientLabel: 'Demo room B',
+        patientLabel: 'Room B',
         priority: 'urgent',
         dueAt: iso(80),
         completedAt: null,
@@ -63,7 +64,7 @@ export function createDemoWorkspace(now = new Date()): Workspace {
       },
       {
         id: 'task-4',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         shiftId: 'shift-current',
         title: 'Review the unit’s shift organization workflow',
         patientLabel: '',
@@ -74,10 +75,10 @@ export function createDemoWorkspace(now = new Date()): Workspace {
       },
       {
         id: 'task-5',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         shiftId: 'shift-current',
         title: 'Write down questions for the next check-in',
-        patientLabel: 'Demo room C',
+        patientLabel: 'Room C',
         priority: 'important',
         dueAt: null,
         completedAt: null,
@@ -85,7 +86,7 @@ export function createDemoWorkspace(now = new Date()): Workspace {
       },
       {
         id: 'task-previous',
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         shiftId: 'shift-previous',
         title: 'Review the orientation schedule',
         patientLabel: '',
@@ -97,29 +98,39 @@ export function createDemoWorkspace(now = new Date()): Workspace {
     ],
     handoffs: [
       {
-        id: 'handoff-demo',
-        userId: DEMO_USER_ID,
+        id: 'handoff-test',
+        userId: ownerId,
         shiftId: 'shift-current',
-        patientLabel: 'Demo room A',
-        situation: 'Fictional practice outline for an orientation handoff.',
-        background: 'Learning the unit’s communication workflow.',
+        patientLabel: 'Room A',
+        situation: 'Personal preparation outline for a team handoff.',
+        background: 'Review the team communication workflow.',
         assessment: 'Organization practice only. No clinical assessment.',
-        recommendation:
-          'Review the outline with a preceptor using approved unit guidance.',
+        recommendation: 'Discuss the outline with a preceptor.',
         updatedAt: iso(-30),
       },
     ],
     reflections: [
       {
-        id: 'reflection-demo',
-        userId: DEMO_USER_ID,
+        id: 'reflection-test',
+        userId: ownerId,
         shiftId: 'shift-previous',
-        wentWell:
-          'A simple checklist helped me keep track of my learning goals.',
+        wentWell: 'A checklist helped me keep track of learning goals.',
         difficult: 'Switching between tasks felt overwhelming at first.',
-        reviewLater: 'Ask my preceptor how they organize their shift.',
+        reviewLater: 'Ask how the team organizes its shift.',
         confidence: 3,
         createdAt: iso(-1430),
+      },
+    ],
+    learningNotes: [
+      {
+        id: 'learning-note-test',
+        userId: ownerId,
+        shiftId: 'shift-previous',
+        topic: 'Organizing a shift handoff',
+        question: 'What structure does the team use to organize a handoff?',
+        followUp: 'Ask during the next scheduled learning check-in.',
+        createdAt: iso(-1420),
+        updatedAt: iso(-1420),
       },
     ],
   }

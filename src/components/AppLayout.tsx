@@ -1,5 +1,5 @@
 import { Suspense, useState } from 'react'
-import { NavLink, Outlet, Link } from 'react-router-dom'
+import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -23,8 +23,9 @@ import {
 } from '@/components/ui/sheet'
 import { SafetyNotice } from './SafetyNotice'
 import { ErrorState, LoadingState } from './Feedback'
-import { useDemoSession } from '@/demo/useDemoSession'
+import { useAuth } from '@/auth/useAuth'
 import { cn } from '@/lib/utils'
+import { errorMessage } from '@/lib/errors'
 
 const navigation = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -73,8 +74,19 @@ function Navigation({ close }: { close?: () => void }) {
 
 export function AppLayout() {
   const [open, setOpen] = useState(false)
-  const { role, leave, error } = useDemoSession()
-  const roleLabel = role === 'student' ? 'Nursing student' : 'New graduate RN'
+  const [signOutError, setSignOutError] = useState<string | null>(null)
+  const { user, profile, signOut } = useAuth()
+  const navigate = useNavigate()
+  const roleLabel = profile?.role === 'student' ? 'Nursing student' : 'New graduate RN'
+  async function exitAccount() {
+    setSignOutError(null)
+    try {
+      await signOut()
+      navigate('/login', { replace: true })
+    } catch (cause) {
+      setSignOutError(`Cannot sign out: ${errorMessage(cause)}`)
+    }
+  }
   return (
     <div className="min-h-screen">
       <a
@@ -96,7 +108,7 @@ export function AppLayout() {
               One organized shift at a time.
             </p>
             <Badge variant="secondary" className="mt-3">
-              Fictional demo
+              Signed-in account
             </Badge>
           </div>
           <NavLink
@@ -104,15 +116,15 @@ export function AppLayout() {
             className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
           >
             <Settings aria-hidden="true" className="size-5" />
-            Settings
+            Account settings
           </NavLink>
           <Button
             variant="ghost"
             className="mt-1 h-11 w-full justify-start"
-            onClick={leave}
+            onClick={exitAccount}
           >
             <LogOut aria-hidden="true" />
-            Exit demo
+            Sign out
           </Button>
         </div>
       </aside>
@@ -126,14 +138,16 @@ export function AppLayout() {
           </p>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="hidden sm:inline-flex">
-              Demo workspace
+              Account workspace
             </Badge>
             <div className="hidden items-center gap-3 lg:flex">
               <div className="bg-secondary text-primary flex size-9 items-center justify-center rounded-full text-sm font-semibold">
-                D
+                {(user?.email?.[0] ?? 'A').toUpperCase()}
               </div>
               <div>
-                <p className="text-sm font-semibold">Demo learner</p>
+                <p className="max-w-52 truncate text-sm font-semibold">
+                  {user?.email}
+                </p>
                 <p className="text-muted-foreground text-xs">{roleLabel}</p>
               </div>
             </div>
@@ -152,7 +166,7 @@ export function AppLayout() {
                 <SheetHeader className="px-0">
                   <SheetTitle>Planurse workspace</SheetTitle>
                   <SheetDescription>
-                    Fictional demo · {roleLabel}
+                    {user?.email} · {roleLabel}
                   </SheetDescription>
                 </SheetHeader>
                 <Navigation close={() => setOpen(false)} />
@@ -162,11 +176,11 @@ export function AppLayout() {
                   className="flex min-h-12 items-center gap-3 px-3"
                 >
                   <Settings aria-hidden="true" className="size-5" />
-                  Settings
+                  Account settings
                 </NavLink>
-                <Button variant="outline" className="h-11" onClick={leave}>
+                <Button variant="outline" className="h-11" onClick={exitAccount}>
                   <LogOut aria-hidden="true" />
-                  Exit demo
+                  Sign out
                 </Button>
               </SheetContent>
             </Sheet>
@@ -177,9 +191,9 @@ export function AppLayout() {
           tabIndex={-1}
           className="mx-auto max-w-7xl p-4 pb-8 outline-none sm:p-8 lg:p-10"
         >
-          {error && (
+          {signOutError && (
             <div className="mb-5">
-              <ErrorState message={error} />
+              <ErrorState message={signOutError} />
             </div>
           )}
           <Suspense fallback={<LoadingState />}>
@@ -190,7 +204,7 @@ export function AppLayout() {
           </div>
           <footer className="text-muted-foreground mt-4 flex flex-wrap justify-between gap-2 text-xs">
             <span>Planurse · Workflow, not clinical guidance.</span>
-            <span>Local demo data · No cloud connection</span>
+            <span>Account-scoped cloud workspace</span>
           </footer>
         </main>
       </div>

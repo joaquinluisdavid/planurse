@@ -12,7 +12,7 @@ export function SafetyNotice() {
       />
       <p>
         <strong className="text-foreground">
-          Fictional demo only. No patient information.
+          No patient-identifying information.
         </strong>{' '}
         Do not enter real names, medical record numbers, diagnoses, addresses,
         dates of birth, or other protected health information. Planurse does not

@@ -5,10 +5,9 @@ import {
   shiftFormSchema,
 } from '@/features/shifts/schemas'
 
-export const DEMO_USER_ID = 'demo-user'
-const ownership = { userId: z.literal(DEMO_USER_ID) }
-const timestamp = z.iso.datetime()
-const roomLabel = z.string().regex(/^Demo room [A-Za-z0-9-]{1,12}$/)
+const ownership = { userId: z.string().min(1) }
+const timestamp = z.iso.datetime({ offset: true })
+const roomLabel = z.string().regex(/^(?:Demo )?Room [A-Za-z0-9-]{1,12}$/i)
 
 export const shiftSchema = z.object({
   id: z.string().min(1),
@@ -51,6 +50,16 @@ export const reflectionSchema = z.object({
   confidence: z.number().int().min(1).max(5),
   createdAt: timestamp,
 })
+export const learningNoteSchema = z.object({
+  id: z.string().min(1),
+  ...ownership,
+  shiftId: z.string().min(1),
+  topic: z.string().trim().min(3).max(100),
+  question: z.string().trim().max(1000),
+  followUp: z.string().trim().max(1000),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+})
 
 export const workspaceSchema = z
   .object({
@@ -59,6 +68,7 @@ export const workspaceSchema = z
     tasks: z.array(taskSchema),
     handoffs: z.array(handoffSchema),
     reflections: z.array(reflectionSchema),
+    learningNotes: z.array(learningNoteSchema).default([]),
   })
   .superRefine((value, context) => {
     if (value.shifts.filter((shift) => !shift.endedAt).length > 1)
@@ -71,6 +81,7 @@ export const workspaceSchema = z
       value.tasks,
       value.handoffs,
       value.reflections,
+      value.learningNotes,
     ]) {
       if (new Set(records.map((record) => record.id)).size !== records.length)
         context.addIssue({
@@ -82,6 +93,7 @@ export const workspaceSchema = z
       ...value.tasks,
       ...value.handoffs,
       ...value.reflections,
+      ...value.learningNotes,
     ]) {
       const shift = value.shifts.find((shift) => shift.id === record.shiftId)
       if (
@@ -102,4 +114,5 @@ export type Shift = z.infer<typeof shiftSchema>
 export type Task = z.infer<typeof taskSchema>
 export type Handoff = z.infer<typeof handoffSchema>
 export type Reflection = z.infer<typeof reflectionSchema>
+export type LearningNote = z.infer<typeof learningNoteSchema>
 export type Workspace = z.infer<typeof workspaceSchema>

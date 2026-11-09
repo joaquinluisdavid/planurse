@@ -7,7 +7,6 @@ type WorkspaceValue = {
   error: string | null
   reload: () => void
   update: (change: (workspace: Workspace) => Workspace) => Promise<void>
-  reset: () => Promise<void>
 }
 export const WorkspaceContext = createContext<WorkspaceValue | null>(null)
 

@@ -1,4 +1,4 @@
-import { DEMO_USER_ID, type Workspace, type Task } from '@/data/models'
+import type { Workspace, Task } from '@/data/models'
 import { localDate } from '@/lib/dates'
 import {
   roomSuffixSchema,
@@ -22,18 +22,21 @@ export function startShift(
   values: ShiftFormValues,
   id: string,
   now = new Date(),
+  userId?: string,
 ): Workspace {
   const valid = shiftFormSchema.parse(values)
   if (workspace.shifts.some((shift) => !shift.endedAt))
     throw new Error('End your current shift before starting another.')
   if (valid.date > localDate(now))
     throw new Error('A shift cannot start on a future date.')
+  const ownerId = userId ?? workspace.shifts[0]?.userId
+  if (!ownerId) throw new Error('An authenticated account is required to start a shift.')
   return {
     ...workspace,
     shifts: [
       {
         id,
-        userId: DEMO_USER_ID,
+        userId: ownerId,
         ...valid,
         startedAt: now.toISOString(),
         endedAt: null,
@@ -65,7 +68,7 @@ export function saveTask(
     throw new Error('Task identifier already exists. Please try again.')
   const task: Task = {
     id,
-    userId: DEMO_USER_ID,
+    userId: shift.userId,
     shiftId,
     title: valid.title,
     patientLabel: valid.patientLabel,
@@ -126,9 +129,13 @@ export function addRoom(
   suffix: string,
 ): Workspace {
   const shift = requireActiveShift(workspace, shiftId)
-  const label = `Demo room ${roomSuffixSchema.parse(suffix).toUpperCase()}`
-  if (shift.patientLabels.includes(label))
-    throw new Error('That fictional room is already on this shift.')
+  const label = `Room ${roomSuffixSchema.parse(suffix).toUpperCase()}`
+  if (
+    shift.patientLabels.some(
+      (existing) => existing.replace(/^Demo /i, '').toLowerCase() === label.toLowerCase(),
+    )
+  )
+    throw new Error('That room shorthand is already on this shift.')
   return {
     ...workspace,
     shifts: workspace.shifts.map((item) =>

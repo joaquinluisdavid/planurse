@@ -70,7 +70,7 @@ export default function DashboardPage() {
               <span className="size-2 rounded-full bg-[#c7e4ce]" />
               {shift ? 'Shift in progress' : 'Between shifts'}
               <span className="ml-2 rounded-md border border-white/25 px-2 py-0.5 text-[10px] tracking-wider uppercase">
-                Fictional demo
+                Signed-in account
               </span>
             </div>
             <h2 className="text-2xl font-semibold">
@@ -80,7 +80,7 @@ export default function DashboardPage() {
             </h2>
             <p className="mt-2 text-sm text-white/85">
               {shift
-                ? `${formatDate(shift.date)} · Started ${formatTime(shift.startedAt)} · ${shift.patientLabels.length} fictional rooms`
+                ? `${formatDate(shift.date)} · Started ${formatTime(shift.startedAt)} · ${shift.patientLabels.length} rooms`
                 : 'Choose your shift type and build a practical task list.'}
             </p>
           </div>
@@ -265,7 +265,7 @@ export default function DashboardPage() {
                 ))}
               </div>
               <p className="text-muted-foreground mt-3 text-xs">
-                Handoff editing arrives in stage 7.
+                Drafts and learning notes are saved to your account.
               </p>
             </CardContent>
           </Card>
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                 to="/handoffs"
                 className="text-primary text-xs font-medium hover:underline"
               >
-                View samples
+                View drafts
               </Link>
             </div>
             {handoffs.length ? (
@@ -303,7 +303,7 @@ export default function DashboardPage() {
                     <h3 className="text-sm font-semibold">
                       {handoff.patientLabel}
                     </h3>
-                    <Badge variant="secondary">Sample</Badge>
+                    <Badge variant="secondary">Preparation aid</Badge>
                   </div>
                   <p className="text-muted-foreground mt-2 text-sm">
                     {handoff.situation}
@@ -316,7 +316,7 @@ export default function DashboardPage() {
             ) : (
               <EmptyState
                 title="No handoff drafts"
-                description="Your fictional preparation aids will appear here."
+                description="Your preparation aids will appear here."
               />
             )}
           </CardContent>
@@ -329,7 +329,7 @@ export default function DashboardPage() {
                 to="/reflections"
                 className="text-primary text-xs font-medium hover:underline"
               >
-                View samples
+                View reflections
               </Link>
             </div>
             {reflections.length ? (
@@ -347,7 +347,7 @@ export default function DashboardPage() {
                     {reflection.wentWell}
                   </p>
                   <p className="text-muted-foreground mt-3 text-xs">
-                    Fictional sample · {formatDue(reflection.createdAt)}
+                    Reflection · {formatDue(reflection.createdAt)}
                   </p>
                 </div>
               ))

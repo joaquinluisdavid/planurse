@@ -1,67 +1,81 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import {
-  demoRepository,
-  WORKSPACE_KEY,
-  type WorkspaceRepository,
-} from './demoRepository'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import type { WorkspaceRepository } from './repository'
+import { createSupabaseRepository } from './supabaseRepository'
 import type { Workspace } from './models'
 import { errorMessage } from '@/lib/errors'
 import { WorkspaceContext } from './useWorkspace'
+import { useAuth } from '@/auth/useAuth'
+
+type LoadState = {
+  repository: WorkspaceRepository
+  revision: number
+  data: Workspace | null
+  error: string | null
+}
+
+const unavailableRepository: WorkspaceRepository = {
+  async load() {
+    throw new Error('Sign in before loading your workspace.')
+  },
+  async update() {
+    throw new Error('Sign in before updating your workspace.')
+  },
+}
 
 export function WorkspaceProvider({
   children,
-  repository = demoRepository,
+  repository: injectedRepository,
 }: {
   children: ReactNode
   repository?: WorkspaceRepository
 }) {
-  const [data, setData] = useState<Workspace | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { user, profile } = useAuth()
+  const userId = user?.id
+  const hasCompletedProfile = Boolean(profile)
+  const repository = useMemo(
+    () =>
+      injectedRepository ??
+      (userId && hasCompletedProfile
+        ? createSupabaseRepository(userId)
+        : unavailableRepository),
+    [injectedRepository, userId, hasCompletedProfile],
+  )
   const [revision, setRevision] = useState(0)
+  const [loaded, setLoaded] = useState<LoadState | null>(null)
   const reload = useCallback(() => setRevision((value) => value + 1), [])
+  const current = loaded?.repository === repository && loaded.revision === revision
+  const data = current && loaded ? loaded.data : null
+  const loading = !current
+  const error = current && loaded ? loaded.error : null
+
   useEffect(() => {
     let cancelled = false
     repository
       .load()
       .then((next) => {
-        if (!cancelled) {
-          setData(next)
-          setLoading(false)
-          setError(null)
-        }
+        if (!cancelled)
+          setLoaded({ repository, revision, data: next, error: null })
       })
       .catch((cause: unknown) => {
-        if (!cancelled) {
-          setError(`Cannot load demo workspace: ${errorMessage(cause)}`)
-          setLoading(false)
-        }
+        if (!cancelled)
+          setLoaded({
+            repository,
+            revision,
+            data: null,
+            error: `Cannot load your workspace: ${errorMessage(cause)}`,
+          })
       })
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === WORKSPACE_KEY || event.key === null) reload()
-    }
-    window.addEventListener('storage', onStorage)
     return () => {
       cancelled = true
-      window.removeEventListener('storage', onStorage)
     }
-  }, [repository, revision, reload])
+  }, [repository, revision])
+
   async function update(change: (workspace: Workspace) => Workspace) {
-    // Commit storage first; a failed write never appears as a successful UI change.
     const next = await repository.update(change)
-    setData(next)
-    setError(null)
-  }
-  async function reset() {
-    const next = await repository.reset()
-    setData(next)
-    setError(null)
-    setLoading(false)
+    setLoaded({ repository, revision, data: next, error: null })
   }
   return (
-    <WorkspaceContext.Provider
-      value={{ data, loading, error, reload, update, reset }}
-    >
+    <WorkspaceContext.Provider value={{ data, loading, error, reload, update }}>
       {children}
     </WorkspaceContext.Provider>
   )

@@ -18,8 +18,8 @@ export function UpcomingPage({
         description={description}
       />
       <EmptyState
-        title="Not connected in this demo"
-        description="This first release focuses on the dashboard and shift planner. No content entered on another page is used to generate clinical advice."
+        title="Page not found"
+        description="This address is not part of your Planurse workspace. No clinical advice is generated."
         action={
           <Button asChild variant="outline">
             <Link to="/dashboard">Back to overview</Link>

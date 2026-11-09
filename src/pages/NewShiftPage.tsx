@@ -24,11 +24,13 @@ import {
 } from '@/features/shifts/schemas'
 import { startShift } from '@/features/shifts/mutations'
 import { useWorkspace } from '@/data/useWorkspace'
+import { useAuth } from '@/auth/useAuth'
 import { localDate } from '@/lib/dates'
 import { errorMessage } from '@/lib/errors'
 
 export default function NewShiftPage() {
   const { data, loading, error, reload, update } = useWorkspace()
+  const { user } = useAuth()
   const [saveError, setSaveError] = useState<string | null>(null)
   const navigate = useNavigate()
   const form = useForm<ShiftFormValues>({
@@ -43,7 +45,7 @@ export default function NewShiftPage() {
     }
     try {
       const id = crypto.randomUUID()
-      await update((workspace) => startShift(workspace, values, id))
+      await update((workspace) => startShift(workspace, values, id, new Date(), user?.id))
       toast.success('Shift started.')
       navigate(`/shifts/${id}`)
     } catch (cause) {
@@ -61,7 +63,7 @@ export default function NewShiftPage() {
       <PageHeader
         eyebrow="Shift planner"
         title="Start with a simple plan."
-        description="Choose a shift type and date. Add fictional rooms and general workflow tasks next."
+        description="Choose a shift type and date. Add room shorthand and general workflow tasks next."
       />
       {active ? (
         <Card className="max-w-xl shadow-none">

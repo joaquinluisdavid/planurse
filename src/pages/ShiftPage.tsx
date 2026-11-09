@@ -99,7 +99,7 @@ function ShiftPage() {
     return (
       <EmptyState
         title="Shift not found"
-        description="This shift is not in your fictional workspace."
+        description="This shift is not in your account workspace."
         action={
           <Button asChild>
             <Link to="/shifts">View shifts</Link>
@@ -179,22 +179,30 @@ function ShiftPage() {
             Your shift is saved in history.
           </p>
           <p className="text-muted-foreground mt-1 text-sm">
-            Unfinished tasks remain unfinished. Reflection editing arrives in
-            stage 8.
+            Unfinished tasks remain unfinished. Use a short reflection to note
+            learning goals and questions for a future check-in.
           </p>
-          <Link
-            to="/reflections"
-            className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
-          >
-            View reflection samples
-          </Link>
+          <div className="flex flex-wrap gap-4">
+            <Link
+              to={`/reflections/new?shiftId=${encodeURIComponent(shift.id)}`}
+              className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
+            >
+              Write a reflection
+            </Link>
+            <Link
+              to={`/learning-notes/new?shiftId=${encodeURIComponent(shift.id)}`}
+              className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
+            >
+              Add a learning note
+            </Link>
+          </div>
         </div>
       )}
       <section
-        aria-label="Fictional rooms"
+        aria-label="Room shorthand"
         className="mb-6 rounded-xl border bg-white p-4"
       >
-        <h2 className="mb-3 text-sm font-semibold">Fictional rooms</h2>
+        <h2 className="mb-3 text-sm font-semibold">Room shorthand</h2>
         <div className="flex flex-wrap gap-2">
           {shift.patientLabels.length ? (
             shift.patientLabels.map((label) => (
@@ -222,14 +230,14 @@ function ShiftPage() {
               if (
                 await commit(
                   (workspace) => addRoom(workspace, shift.id, valid.data),
-                  'Fictional room added.',
+                  'Room shorthand added.',
                 )
               )
                 setRoom('')
             }}
           >
             <div className="flex-1 space-y-2">
-              <Label htmlFor="room-code">Add fictional room code</Label>
+              <Label htmlFor="room-code">Add room shorthand</Label>
               <Input
                 id="room-code"
                 value={room}
@@ -255,8 +263,8 @@ function ShiftPage() {
               Add room
             </Button>
             <p id="room-help" className="text-muted-foreground w-full text-xs">
-              Saved as “Demo room CODE.” Letters, numbers, and hyphens only.
-              Never use names or identifying information.
+              Saved as “Room CODE.” Letters, numbers, and hyphens only. Never
+              use patient names or identifying information.
             </p>
             {roomError && (
               <p
@@ -373,7 +381,7 @@ function ShiftPage() {
           <DialogHeader>
             <DialogTitle>Delete this task?</DialogTitle>
             <DialogDescription>
-              “{deleting?.title}” will be removed from this fictional shift.
+              “{deleting?.title}” will be removed from this shift.
               This cannot be undone.
             </DialogDescription>
           </DialogHeader>

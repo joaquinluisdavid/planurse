@@ -1,127 +1,130 @@
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/PageHeader'
 import { ErrorState } from '@/components/Feedback'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog'
-import { useDemoSession } from '@/demo/useDemoSession'
-import { useWorkspace } from '@/data/useWorkspace'
+import { useAuth, type UserRole } from '@/auth/useAuth'
 import { errorMessage } from '@/lib/errors'
-import { useDialogFocus } from '@/lib/useDialogFocus'
 
 export default function SettingsPage() {
-  const { role, leave } = useDemoSession()
-  const { reset } = useWorkspace()
-  const { rememberFocus, restoreFocus } = useDialogFocus()
-  const [open, setOpen] = useState(false)
+  const { user, profile, saveProfile, signOut } = useAuth()
+  const navigate = useNavigate()
+  const [role, setRole] = useState<UserRole>(profile?.role ?? 'new-rn')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   return (
     <>
       <PageHeader
-        eyebrow="Demo preferences"
+        eyebrow="Account preferences"
         title="Settings"
-        description="This workspace is local, fictional, and not a secure account."
+        description="Manage your account profile and sign-in."
       />
       <div className="grid max-w-3xl gap-5">
         <Card className="shadow-none">
           <CardContent>
-            <h2 className="font-semibold">Demo perspective</h2>
+            <h2 className="font-semibold">Signed-in account</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              {role === 'student' ? 'Nursing student' : 'New graduate RN'}. Exit
-              the demo to select a different perspective.
+              {user?.email}
             </p>
-            <Button variant="outline" className="mt-4 h-11" onClick={leave}>
-              Exit demo
-            </Button>
-          </CardContent>
-        </Card>
-        <Card className="shadow-none">
-          <CardContent>
-            <h2 className="font-semibold">Local demo data</h2>
-            <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              Fictional shifts and tasks are stored in this browser’s local
-              storage. Everyone using the same browser profile shares this demo
-              data. Exiting the demo does not erase it. Do not enter sensitive
-              information. Clearing browser storage removes it; it is not a
-              backup.
+            <p className="text-muted-foreground mt-2 text-xs">
+              Workspace records use your signed-in Supabase session. The
+              included migration configures owner-scoped row-level security;
+              verify it with separate accounts before production use.
             </p>
             <Button
+              asChild
               variant="outline"
               className="mt-4 h-11"
-              onClick={() => {
-                rememberFocus()
-                setError(null)
-                setOpen(true)
-              }}
             >
-              Reset fictional demo
+              <Link to="/forgot-password">Change password</Link>
             </Button>
           </CardContent>
         </Card>
         <Card className="shadow-none">
           <CardContent>
-            <h2 className="font-semibold">Authentication is next</h2>
+            <h2 className="font-semibold">Your perspective</h2>
             <p className="text-muted-foreground mt-2 text-sm">
-              Supabase sign up, sign in, password reset, account settings, and
-              user-owned PostgreSQL records arrive in stages 5–6. No account
-              credentials are collected in this release.
+              Update the perspective used to tailor organizational language.
             </p>
-          </CardContent>
-        </Card>
-      </div>
-      <Dialog
-        open={open}
-        onOpenChange={(next) => {
-          if (!busy) setOpen(next)
-        }}
-      >
-        <DialogContent onCloseAutoFocus={restoreFocus}>
-          <DialogHeader>
-            <DialogTitle>Reset the demo?</DialogTitle>
-            <DialogDescription>
-              All local edits will be replaced with fresh fictional examples.
-              This cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          {error && <ErrorState message={error} />}
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              disabled={busy}
-              onClick={() => setOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={busy}
-              onClick={async () => {
+            <form
+              className="mt-4 flex flex-wrap items-end gap-3"
+              onSubmit={async (event) => {
+                event.preventDefault()
                 setBusy(true)
                 setError(null)
                 try {
-                  await reset()
-                  toast.success('Fictional demo reset.')
-                  setOpen(false)
+                  await saveProfile(role)
+                  toast.success('Profile updated.')
                 } catch (cause) {
-                  setError(`Cannot reset demo: ${errorMessage(cause)}`)
+                  setError(`Cannot update profile: ${errorMessage(cause)}`)
                 } finally {
                   setBusy(false)
                 }
               }}
             >
-              {busy ? 'Resetting...' : 'Reset demo'}
+              <div className="min-w-60 flex-1 space-y-2">
+                <label
+                  htmlFor="account-role"
+                  className="text-sm font-medium"
+                >
+                  Perspective
+                </label>
+                <select
+                  id="account-role"
+                  value={role}
+                  onChange={(event) =>
+                    setRole(event.target.value as UserRole)
+                  }
+                  disabled={busy}
+                  className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+                >
+                  <option value="student">Nursing student</option>
+                  <option value="new-rn">New graduate RN</option>
+                </select>
+              </div>
+              <Button
+                type="submit"
+                variant="outline"
+                className="h-11"
+                disabled={busy}
+              >
+                {busy ? 'Saving…' : 'Save perspective'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+        {error && <ErrorState message={error} />}
+        <Card className="shadow-none">
+          <CardContent>
+            <h2 className="font-semibold">Sign out</h2>
+            <p className="text-muted-foreground mt-2 text-sm">
+              Sign out from this browser. Your cloud workspace remains associated
+              with your account.
+            </p>
+            <Button
+              variant="outline"
+              className="mt-4 h-11"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true)
+                setError(null)
+                try {
+                  await signOut()
+                  navigate('/login', { replace: true })
+                } catch (cause) {
+                  setError(`Cannot sign out: ${errorMessage(cause)}`)
+                } finally {
+                  setBusy(false)
+                }
+              }}
+            >
+              Sign out
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+          </CardContent>
+        </Card>
+      </div>
     </>
   )
 }

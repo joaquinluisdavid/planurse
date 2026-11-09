@@ -47,5 +47,5 @@ export const roomSuffixSchema = z
   .trim()
   .regex(
     /^[A-Za-z0-9-]{1,12}$/,
-    'Use 1–12 letters, numbers, or hyphens for a fictional room code.',
+    'Use 1–12 letters, numbers, or hyphens. Do not include patient identifiers.',
   )

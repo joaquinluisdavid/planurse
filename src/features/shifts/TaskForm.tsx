@@ -107,7 +107,7 @@ export function TaskForm({
               name="patientLabel"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Fictional room</FormLabel>
+                  <FormLabel>Room shorthand</FormLabel>
                   <FormControl>
                     <NativeSelect {...field}>
                       <option value="">Shift-wide (no room)</option>
@@ -119,7 +119,7 @@ export function TaskForm({
                     </NativeSelect>
                   </FormControl>
                   <FormDescription>
-                    Only fictional room codes are available.
+                    Use a room shorthand only. Do not enter patient identifiers.
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
