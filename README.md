@@ -97,11 +97,29 @@ npm run format:check
 The UI test suite uses injected auth and workspace repositories and does not
 contact Supabase. It does not replace the two-user live RLS checks above.
 
-## Deployment
+## Deploy to GitHub Pages
 
-This is a Vite SPA. Build with `npm run build`, publish `dist`, and configure
-HTTPS plus an SPA fallback. Netlify's `public/_redirects` is included. Set the
-Supabase URL and publishable key in the deployment environment, set the exact
-site/redirect URLs in Supabase Auth, and apply migrations before enabling
-accounts. Do not market the service as HIPAA compliant or use it for patient
-records based solely on these technical controls.
+This repository includes a GitHub Actions workflow at
+`.github/workflows/deploy-pages.yml`. It runs tests, builds the Vite SPA with
+the `/planurse/` repository base path, adds a `404.html` fallback for direct
+React Router URLs, and deploys `dist` to Pages.
+
+1. In GitHub, open **joaquinluisdavid/planurse → Settings → Pages** and set the
+  build/deployment source to **GitHub Actions**.
+2. Open **Settings → Secrets and variables → Actions → Variables** and add the
+  repository variables `VITE_SUPABASE_URL` and
+  `VITE_SUPABASE_PUBLISHABLE_KEY`. These are public client values embedded in
+  the site bundle; never use a Supabase `service_role` or secret key here.
+3. Push to `main` (or manually run **Deploy Planurse to GitHub Pages** from the
+  Actions tab). The deployment URL is
+  `https://joaquinluisdavid.github.io/planurse/`.
+4. In Supabase Auth URL Configuration, set the Site URL to
+  `https://joaquinluisdavid.github.io/planurse/` and add that URL plus
+  `https://joaquinluisdavid.github.io/planurse/update-password` to the allowed
+  redirect URLs. Keep the local development URLs too if needed.
+5. Apply the database migration and verify two-user RLS isolation before using
+  real account data. Direct nested routes use the workflow's `404.html` SPA
+  fallback. The `public/_redirects` file is for Netlify, not GitHub Pages.
+
+Do not market the service as HIPAA compliant or use it for patient records
+based solely on these technical controls.

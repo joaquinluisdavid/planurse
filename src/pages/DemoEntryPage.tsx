@@ -104,7 +104,10 @@ export function AccountEntryPage({
 					)
 			} else if (mode === 'forgot-password') {
 				const { error: authError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-					redirectTo: `${window.location.origin}/update-password`,
+					redirectTo: new URL(
+						'update-password',
+						`${window.location.origin}${import.meta.env.BASE_URL}`,
+					).toString(),
 				})
 				if (authError) throw authError
 				setMessage('If an account exists for that address, a password reset link is on its way.')
