@@ -13,13 +13,12 @@ const ShiftsPage = lazy(() => import('@/pages/ShiftsPage'))
 const NewShiftPage = lazy(() => import('@/pages/NewShiftPage'))
 const ShiftPage = lazy(() => import('@/pages/ShiftPage'))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
-const HandoffSamplesPage = lazy(() => import('@/pages/HandoffSamplesPage'))
 const ReflectionSamplesPage = lazy(
   () => import('@/pages/ReflectionSamplesPage'),
 )
-const HandoffEditorPage = lazy(() => import('@/pages/HandoffEditorPage'))
 const ReflectionEditorPage = lazy(() => import('@/pages/ReflectionEditorPage'))
 const LearningNotesPage = lazy(() => import('@/pages/LearningNotesPage'))
+const CalendarPage = lazy(() => import('@/pages/CalendarPage'))
 
 export function AppRoutes() {
   return (
@@ -27,23 +26,27 @@ export function AppRoutes() {
       <Route path="/" element={<AccountEntryPage />} />
       <Route path="/login" element={<AccountEntryPage mode="login" />} />
       <Route path="/signup" element={<AccountEntryPage mode="signup" />} />
-      <Route path="/forgot-password" element={<AccountEntryPage mode="forgot-password" />} />
-      <Route path="/update-password" element={<AccountEntryPage mode="update-password" />} />
+      <Route
+        path="/forgot-password"
+        element={<AccountEntryPage mode="forgot-password" />}
+      />
+      <Route
+        path="/update-password"
+        element={<AccountEntryPage mode="update-password" />}
+      />
       <Route element={<ProtectedRoute allowIncompleteProfile />}>
-        <Route path="/onboarding" element={<AccountEntryPage mode="onboarding" />} />
+        <Route
+          path="/onboarding"
+          element={<AccountEntryPage mode="onboarding" />}
+        />
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
           <Route path="/shifts" element={<ShiftsPage />} />
           <Route path="/shifts/new" element={<NewShiftPage />} />
           <Route path="/shifts/:shiftId" element={<ShiftPage />} />
-          <Route path="/handoffs" element={<HandoffSamplesPage />} />
-          <Route path="/handoffs/new" element={<HandoffEditorPage />} />
-          <Route
-            path="/handoffs/:handoffId/edit"
-            element={<HandoffEditorPage />}
-          />
           <Route path="/reflections" element={<ReflectionSamplesPage />} />
           <Route path="/reflections/new" element={<ReflectionEditorPage />} />
           <Route

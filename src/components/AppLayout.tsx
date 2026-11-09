@@ -3,7 +3,6 @@ import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarDays,
-  ClipboardList,
   NotebookPen,
   BookOpen,
   Settings,
@@ -29,8 +28,7 @@ import { errorMessage } from '@/lib/errors'
 
 const navigation = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { to: '/shifts', label: 'Shift planner', icon: CalendarDays },
-  { to: '/handoffs', label: 'Handoff drafts', icon: ClipboardList },
+  { to: '/calendar', label: 'Calendar & reminders', icon: CalendarDays },
   { to: '/reflections', label: 'Reflections', icon: NotebookPen },
   { to: '/learning-notes', label: 'Learning notes', icon: BookOpen },
 ]
@@ -77,7 +75,8 @@ export function AppLayout() {
   const [signOutError, setSignOutError] = useState<string | null>(null)
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
-  const roleLabel = profile?.role === 'student' ? 'Nursing student' : 'New graduate RN'
+  const roleLabel =
+    profile?.role === 'student' ? 'Nursing student' : 'New graduate RN'
   async function exitAccount() {
     setSignOutError(null)
     try {
@@ -134,7 +133,7 @@ export function AppLayout() {
             <Brand />
           </div>
           <p className="text-muted-foreground hidden text-sm lg:block">
-            A little structure. A clearer shift.
+            A little structure. Room to breathe.
           </p>
           <div className="flex items-center gap-3">
             <Badge variant="outline" className="hidden sm:inline-flex">
@@ -178,7 +177,11 @@ export function AppLayout() {
                   <Settings aria-hidden="true" className="size-5" />
                   Account settings
                 </NavLink>
-                <Button variant="outline" className="h-11" onClick={exitAccount}>
+                <Button
+                  variant="outline"
+                  className="h-11"
+                  onClick={exitAccount}
+                >
                   <LogOut aria-hidden="true" />
                   Sign out
                 </Button>

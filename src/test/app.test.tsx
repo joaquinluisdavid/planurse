@@ -8,6 +8,7 @@ import { AuthContext, type AuthValue } from '@/auth/useAuth'
 import { WorkspaceProvider } from '@/data/WorkspaceProvider'
 import type { WorkspaceRepository } from '@/data/repository'
 import { createWorkspaceFixture } from './workspaceFixture'
+import { formatDate, localDate } from '@/lib/dates'
 import type { Workspace } from '@/data/models'
 
 function repository(initial = createWorkspaceFixture()): WorkspaceRepository {
@@ -22,9 +23,9 @@ function repository(initial = createWorkspaceFixture()): WorkspaceRepository {
 }
 function emptyRecordWorkspace() {
   const workspace = createWorkspaceFixture()
-  workspace.handoffs = []
   workspace.reflections = []
   workspace.learningNotes = []
+  workspace.caseRecords = []
   return workspace
 }
 function mount(
@@ -33,7 +34,10 @@ function mount(
   authOverrides: Partial<AuthValue> = {},
 ) {
   const authValue: AuthValue = {
-    user: { id: '00000000-0000-4000-8000-000000000001', email: 'learner@example.test' } as User,
+    user: {
+      id: '00000000-0000-4000-8000-000000000001',
+      email: 'learner@example.test',
+    } as User,
     profile: { userId: '00000000-0000-4000-8000-000000000001', role: 'new-rn' },
     loading: false,
     error: null,
@@ -57,22 +61,46 @@ function mount(
 
 describe('authenticated account boundary', () => {
   it('redirects anonymous visitors to actual sign-in', async () => {
-    mount('/dashboard', repository(), { user: null, profile: null, configured: false })
-    expect(await screen.findByRole('heading', { name: 'Welcome back.' })).toBeInTheDocument()
-    expect(screen.getByText('Cloud service setup required.')).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Your day, at a glance.' })).not.toBeInTheDocument()
+    mount('/dashboard', repository(), {
+      user: null,
+      profile: null,
+      configured: false,
+    })
+    expect(
+      await screen.findByRole('heading', { name: 'Welcome back.' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Cloud service setup required.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { name: 'Your day, at a glance.' }),
+    ).not.toBeInTheDocument()
   })
   it('requires account onboarding before opening private workspace routes', async () => {
     mount('/dashboard', repository(), { profile: null })
-    expect(await screen.findByRole('heading', { name: 'Make room for learning.' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Save profile' })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: 'Make room for learning.' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Save profile' }),
+    ).toBeInTheDocument()
   })
   it('shows account creation and password recovery links on welcome and sign in', async () => {
-    const { user } = mount('/', repository(), { user: null, profile: null, configured: false })
-    expect(screen.getAllByRole('link', { name: 'Create account' })[0]).toHaveAttribute('href', '/signup')
+    const { user } = mount('/', repository(), {
+      user: null,
+      profile: null,
+      configured: false,
+    })
+    expect(
+      screen.getAllByRole('link', { name: 'Create account' })[0],
+    ).toHaveAttribute('href', '/signup')
     await user.click(screen.getAllByRole('link', { name: 'Sign in' })[0])
-    await user.click(await screen.findByRole('link', { name: 'Forgot password?' }))
-    expect(await screen.findByRole('heading', { name: 'Reset your password.' })).toBeInTheDocument()
+    await user.click(
+      await screen.findByRole('link', { name: 'Forgot password?' }),
+    )
+    expect(
+      await screen.findByRole('heading', { name: 'Reset your password.' }),
+    ).toBeInTheDocument()
   })
   it('toggles password visibility on the account form', async () => {
     const { user } = mount('/signup', repository(), {
@@ -85,10 +113,9 @@ describe('authenticated account boundary', () => {
     expect(password).toHaveAttribute('type', 'password')
     await user.click(screen.getByRole('button', { name: 'Show password' }))
     expect(password).toHaveAttribute('type', 'text')
-    expect(screen.getByRole('button', { name: 'Hide password' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    )
+    expect(
+      screen.getByRole('button', { name: 'Hide password' }),
+    ).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: 'Hide password' }))
     expect(password).toHaveAttribute('type', 'password')
   })
@@ -156,7 +183,7 @@ describe('planner interactions with mocked data access', () => {
       screen.getAllByRole('button', { name: 'Clear filters' })[0],
     )
     expect(
-      screen.getByText('Prepare a handoff outline'),
+      screen.getByText('Review upcoming responsibilities'),
     ).toBeInTheDocument()
   })
   it('validates room shorthand and makes it available to task forms', async () => {
@@ -179,30 +206,28 @@ describe('planner interactions with mocked data access', () => {
     )
     await user.click(screen.getByRole('button', { name: 'Add a task' }))
     expect(
-      within(screen.getAllByLabelText('Room shorthand')[0]).getByRole('option', {
-        name: 'Room D',
-      }),
+      within(screen.getAllByLabelText('Room shorthand')[0]).getByRole(
+        'option',
+        {
+          name: 'Room D',
+        },
+      ),
     ).toBeInTheDocument()
   })
-  it('shows the dashboard overdue shortcut and filters the planner accordingly', async () => {
+  it('shows upcoming calendar entries on the dashboard and opens the calendar', async () => {
     const { user } = mount('/dashboard')
-    await screen.findByRole('heading', { name: 'Your day, at a glance.' })
-    await user.click(
-      screen.getByRole('link', {
-        name: /Confirm the orientation checklist with preceptor/,
-      }),
-    )
-    expect(await screen.findByLabelText('Due time')).toHaveValue('overdue')
+    await screen.findByRole('heading', { name: 'Plan at your own pace.' })
+    await user.click(screen.getByRole('link', { name: 'Orientation check-in' }))
     expect(
-      screen.getByText('Confirm the orientation checklist with preceptor'),
+      await screen.findByRole('heading', { name: 'Calendar & reminders' }),
     ).toBeInTheDocument()
-    expect(
-      screen.queryByText('Prepare a handoff outline'),
-    ).not.toBeInTheDocument()
+    expect(screen.getAllByText('Orientation check-in').length).toBeGreaterThan(
+      0,
+    )
   })
   it('edits and deletes a task after confirmation', async () => {
     const { user } = mount()
-    const title = 'Prepare a handoff outline'
+    const title = 'Review upcoming responsibilities'
     await user.click(
       await screen.findByRole('button', { name: `Edit task: ${title}` }),
     )
@@ -300,75 +325,188 @@ describe('planner interactions with mocked data access', () => {
       screen.queryByRole('checkbox', { name: /A task that will not save/ }),
     ).not.toBeInTheDocument()
   })
-  it('creates, edits, copies, prints, and deletes a fictional handoff draft', async () => {
-    const { user } = mount('/handoffs', repository(emptyRecordWorkspace()))
-    await user.click(await screen.findByRole('link', { name: /New draft/ }))
-    await screen.findByRole('heading', { name: 'New handoff draft' })
-    await user.selectOptions(screen.getByLabelText('Room shorthand'), 'Room B')
-    await user.type(screen.getByLabelText('Situation'), 'A fictional practice outline')
-    await user.type(screen.getByLabelText('Background'), 'General workflow orientation')
-    await user.type(screen.getByLabelText('Assessment'), 'Organization practice only')
-    await user.type(screen.getByLabelText('Recommendation'), 'Discuss the outline with a preceptor')
-    await user.click(screen.getByRole('button', { name: 'Save draft' }))
-    await screen.findByRole('heading', { name: 'Handoff drafts' })
-    expect(await screen.findByText('A fictional practice outline')).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: 'Edit handoff draft for Room B' }))
-    const situation = await screen.findByLabelText('Situation')
-    await user.clear(situation)
-    await user.type(situation, 'Updated fictional practice outline')
+  it('adds a dated reminder without requiring a shift and moves it on the calendar', async () => {
+    const { user, source } = mount(
+      '/calendar',
+      repository(emptyRecordWorkspace()),
+    )
+    await screen.findByRole('heading', { name: 'Calendar & reminders' })
+    await user.click(screen.getByRole('button', { name: 'Add entry' }))
+    const dialog = screen.getByRole('dialog')
+    await user.type(
+      screen.getByLabelText('Title'),
+      'Call educator about orientation resources',
+    )
+    expect(
+      within(dialog).getByText(/No shift needs to be started/),
+    ).toBeInTheDocument()
+    await user.click(within(dialog).getByRole('button', { name: 'Add entry' }))
+    expect(
+      await screen.findAllByText('Call educator about orientation resources'),
+    ).toHaveLength(2)
+    expect(source.update).toHaveBeenCalledOnce()
+    const movedDate = new Date()
+    movedDate.setDate(movedDate.getDate() + 1)
+    const date = localDate(movedDate)
+    await user.click(
+      screen.getByRole('button', {
+        name: /Call educator about orientation resources.*drag to reschedule/,
+      }),
+    )
+    await user.clear(screen.getByLabelText('Date'))
+    await user.type(screen.getByLabelText('Date'), date)
     await user.click(screen.getByRole('button', { name: 'Save changes' }))
-    await screen.findByRole('heading', { name: 'Handoff drafts', level: 1 })
-    expect(await screen.findByText('Updated fictional practice outline')).toBeInTheDocument()
-    const clipboard = vi.fn().mockResolvedValue(undefined)
-    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: clipboard } })
-    await user.click(screen.getByRole('button', { name: 'Copy' }))
-    expect(clipboard).toHaveBeenCalledWith(expect.stringContaining('Situation: Updated fictional practice outline'))
-    const print = vi.spyOn(window, 'print').mockImplementation(() => {})
-    await user.click(screen.getByRole('button', { name: 'Print' }))
-    expect(print).toHaveBeenCalledOnce()
-    await user.click(screen.getByRole('button', { name: 'Delete handoff draft for Room B' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete draft' }))
-    expect(await screen.findByText('No handoff drafts yet')).toBeInTheDocument()
-    print.mockRestore()
+    expect(
+      screen.getAllByText('Call educator about orientation resources'),
+    ).toHaveLength(2)
+    expect(await screen.findByText(formatDate(date))).toBeInTheDocument()
+  })
+  it('opens the calendar and exposes date-linked reflection and learning actions', async () => {
+    const { user } = mount('/calendar', repository(emptyRecordWorkspace()))
+    await screen.findByRole('heading', { name: 'Calendar & reminders' })
+    await user.click(
+      screen.getAllByRole('link', { name: 'Add learning note' })[0],
+    )
+    expect(
+      await screen.findByRole('heading', { name: 'New learning note' }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Date')).toHaveValue(localDate())
+    expect(screen.getByText(/Save a note for any date/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Calendar entry (optional)')).toHaveValue(
+      'calendar-reminder-test',
+    )
+    await user.type(
+      screen.getByLabelText('Topic'),
+      'Reflect on planning routine',
+    )
+    await user.click(screen.getByRole('button', { name: 'Save note' }))
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Reflect on planning routine',
+      }),
+    ).toBeInTheDocument()
+  })
+  it('records a case-handled category and general takeaway without patient details', async () => {
+    const { user, source } = mount(
+      '/calendar',
+      repository(emptyRecordWorkspace()),
+    )
+    await screen.findByRole('heading', { name: 'Calendar & reminders' })
+    await user.click(screen.getByRole('button', { name: 'Log case handled' }))
+    const dialog = screen.getByRole('dialog')
+    await user.selectOptions(
+      within(dialog).getByLabelText('General case category'),
+      'patient-education',
+    )
+    await user.type(
+      within(dialog).getByLabelText('General learning takeaway (optional)'),
+      'I adapted the explanation to support clear communication.',
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Save entry' }))
+    expect(await screen.findByText(/patient education/i)).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'I adapted the explanation to support clear communication.',
+      ),
+    ).toBeInTheDocument()
+    expect(source.update).toHaveBeenCalledOnce()
+    await user.click(
+      screen.getAllByRole('link', { name: 'Add learning note' }).at(-1)!,
+    )
+    expect(
+      await screen.findByRole('heading', { name: 'New learning note' }),
+    ).toBeInTheDocument()
+    expect(screen.getByLabelText('Case handled (optional)')).not.toHaveValue('')
   })
   it('creates, edits, and deletes post-shift reflections', async () => {
     const { user } = mount('/reflections', repository(emptyRecordWorkspace()))
-    await user.click(await screen.findByRole('link', { name: /New reflection/ }))
+    await user.click(
+      await screen.findByRole('link', { name: /New reflection/ }),
+    )
     await screen.findByRole('heading', { name: 'New reflection' })
-    await user.type(screen.getByLabelText('What went well?'), 'I prepared a clear learning checklist')
-    await user.type(screen.getByLabelText('What felt difficult?'), 'Prioritizing new tasks was difficult')
-    await user.type(screen.getByLabelText('What would you like to review later?'), 'Ask about organizing a check-in')
+    await user.type(
+      screen.getByLabelText('What went well?'),
+      'I prepared a clear learning checklist',
+    )
+    await user.type(
+      screen.getByLabelText('What felt difficult?'),
+      'Prioritizing new tasks was difficult',
+    )
+    await user.type(
+      screen.getByLabelText('What would you like to review later?'),
+      'Ask about organizing a check-in',
+    )
     await user.click(screen.getByRole('button', { name: 'Save reflection' }))
     await screen.findByRole('heading', { name: 'Reflections', level: 1 })
-    expect(await screen.findByText('I prepared a clear learning checklist')).toBeInTheDocument()
+    expect(
+      await screen.findByText('I prepared a clear learning checklist'),
+    ).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Edit reflection' }))
     const wentWell = await screen.findByLabelText('What went well?')
     await user.clear(wentWell)
     await user.type(wentWell, 'I used a calmer review routine')
     await user.click(screen.getByRole('button', { name: 'Save changes' }))
     await screen.findByRole('heading', { name: 'Reflections', level: 1 })
-    expect(await screen.findByText('I used a calmer review routine')).toBeInTheDocument()
+    expect(
+      await screen.findByText('I used a calmer review routine'),
+    ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Delete reflection' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete reflection' }))
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Delete reflection',
+      }),
+    )
     expect(await screen.findByText('No reflections yet')).toBeInTheDocument()
   })
   it('creates, edits, and deletes general learning notes', async () => {
-    const { user } = mount('/learning-notes', repository(emptyRecordWorkspace()))
+    const { user } = mount(
+      '/learning-notes',
+      repository(emptyRecordWorkspace()),
+    )
     await user.click(await screen.findByRole('link', { name: /New note/ }))
     await screen.findByRole('heading', { name: 'New learning note' })
-    await user.type(screen.getByLabelText('Topic'), 'Preparing for a learning check-in')
-    await user.type(screen.getByLabelText('Question to explore (optional)'), 'What questions should I bring?')
-    await user.type(screen.getByLabelText('Follow-up reminder (optional)'), 'Bring my notes next week')
+    await user.type(
+      screen.getByLabelText('Topic'),
+      'Preparing for a learning check-in',
+    )
+    await user.type(
+      screen.getByLabelText('Question to explore (optional)'),
+      'What questions should I bring?',
+    )
+    await user.type(
+      screen.getByLabelText('Follow-up reminder (optional)'),
+      'Bring my notes next week',
+    )
     await user.click(screen.getByRole('button', { name: 'Save note' }))
-    expect(await screen.findByRole('heading', { name: 'Preparing for a learning check-in' })).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: 'Edit Preparing for a learning check-in' }))
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Preparing for a learning check-in',
+      }),
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('link', {
+        name: 'Edit Preparing for a learning check-in',
+      }),
+    )
     const topic = await screen.findByLabelText('Topic')
     await user.clear(topic)
     await user.type(topic, 'Preparing questions for supervision')
     await user.click(screen.getByRole('button', { name: 'Save changes' }))
-    expect(await screen.findByRole('heading', { name: 'Preparing questions for supervision' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Delete Preparing questions for supervision' }))
-    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete note' }))
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Preparing questions for supervision',
+      }),
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', {
+        name: 'Delete Preparing questions for supervision',
+      }),
+    )
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Delete note',
+      }),
+    )
     expect(await screen.findByText('No learning notes yet')).toBeInTheDocument()
   })
 })
@@ -394,7 +532,7 @@ describe('loading, error and empty states', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(
-      await screen.findByRole('heading', { name: 'Your day, at a glance.' }),
+      await screen.findByRole('heading', { name: 'Plan at your own pace.' }),
     ).toBeInTheDocument()
   })
   it('shows useful empty dashboard and history states', async () => {
@@ -404,15 +542,17 @@ describe('loading, error and empty states', () => {
         version: 1,
         shifts: [],
         tasks: [],
-        handoffs: [],
         reflections: [],
         learningNotes: [],
+        plannerItems: [],
+        caseRecords: [],
       }),
     )
-    expect(await screen.findByText('Between shifts')).toBeInTheDocument()
-    expect(screen.getByText('No handoff drafts')).toBeInTheDocument()
-    expect(screen.getByText('No reflections yet')).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: 'Shift history' }))
-    expect(await screen.findByText('No shifts yet')).toBeInTheDocument()
+    expect(await screen.findByText('Your calendar is open')).toBeInTheDocument()
+    expect(
+      screen.getByText('Your reflections will appear here.'),
+    ).toBeInTheDocument()
+    await user.click(screen.getByRole('link', { name: 'Open calendar' }))
+    expect(await screen.findByText('Nothing on this day')).toBeInTheDocument()
   })
 })

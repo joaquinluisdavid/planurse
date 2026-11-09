@@ -4,7 +4,9 @@ import { supabase } from '@/lib/supabase'
 
 function requireClient() {
   if (!supabase)
-    throw new Error('Cloud storage is not configured. Add the Supabase URL and publishable key, then reload.')
+    throw new Error(
+      'Cloud storage is not configured. Add the Supabase URL and publishable key, then reload.',
+    )
   return supabase
 }
 
@@ -19,17 +21,28 @@ function same(a: unknown, b: unknown) {
 export function createSupabaseRepository(userId: string): WorkspaceRepository {
   const client = requireClient()
   const readTable = async (table: string) => {
-    const { data, error } = await client.from(table).select('*').eq('user_id', userId)
+    const { data, error } = await client
+      .from(table)
+      .select('*')
+      .eq('user_id', userId)
     assertNoError(error)
     return (data ?? []) as Record<string, unknown>[]
   }
   const load = async (): Promise<Workspace> => {
-    const [shifts, tasks, handoffs, reflections, learningNotes] = await Promise.all([
+    const [
+      shifts,
+      tasks,
+      reflections,
+      learningNotes,
+      plannerItems,
+      caseRecords,
+    ] = await Promise.all([
       readTable('shifts'),
       readTable('tasks'),
-      readTable('handoffs'),
       readTable('reflections'),
       readTable('learning_notes'),
+      readTable('planner_items'),
+      readTable('case_records'),
     ])
     return workspaceSchema.parse({
       version: 1,
@@ -53,21 +66,13 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
         completedAt: row.completed_at,
         createdAt: row.created_at,
       })),
-      handoffs: handoffs.map((row) => ({
-        id: row.id,
-        userId: row.user_id,
-        shiftId: row.shift_id,
-        patientLabel: row.patient_label,
-        situation: row.situation,
-        background: row.background,
-        assessment: row.assessment,
-        recommendation: row.recommendation,
-        updatedAt: row.updated_at,
-      })),
       reflections: reflections.map((row) => ({
         id: row.id,
         userId: row.user_id,
         shiftId: row.shift_id,
+        plannerItemId: row.planner_item_id,
+        caseRecordId: row.case_record_id,
+        entryDate: row.entry_date,
         wentWell: row.went_well,
         difficult: row.difficult,
         reviewLater: row.review_later,
@@ -78,9 +83,35 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
         id: row.id,
         userId: row.user_id,
         shiftId: row.shift_id,
+        plannerItemId: row.planner_item_id,
+        caseRecordId: row.case_record_id,
+        entryDate: row.entry_date,
         topic: row.topic,
         question: row.question,
         followUp: row.follow_up,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
+      plannerItems: plannerItems.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        kind: row.kind,
+        date: row.date,
+        startTime: row.start_time ? String(row.start_time).slice(0, 5) : null,
+        endTime: row.end_time ? String(row.end_time).slice(0, 5) : null,
+        notes: row.notes,
+        completedAt: row.completed_at,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
+      caseRecords: caseRecords.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        plannerItemId: row.planner_item_id,
+        entryDate: row.entry_date,
+        category: row.category,
+        learningTakeaway: row.learning_takeaway,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       })),
@@ -103,7 +134,11 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
     })
     if (phase !== 'upsert') {
       for (const id of removed) {
-        const { error } = await client.from(table).delete().eq('user_id', userId).eq('id', String(id))
+        const { error } = await client
+          .from(table)
+          .delete()
+          .eq('user_id', userId)
+          .eq('id', String(id))
         assertNoError(error)
       }
     }
@@ -123,10 +158,41 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
       const next = workspaceSchema.parse(change(structuredClone(current)))
       // Persist only changed rows, never the entire client snapshot. Parent rows are
       // written before children; children are removed before shifts for FK safety.
-      await syncTable('tasks', current.tasks, next.tasks, (record) => record, 'delete')
-      await syncTable('handoffs', current.handoffs, next.handoffs, (record) => record, 'delete')
-      await syncTable('reflections', current.reflections, next.reflections, (record) => record, 'delete')
-      await syncTable('learning_notes', current.learningNotes, next.learningNotes, (record) => record, 'delete')
+      await syncTable(
+        'tasks',
+        current.tasks,
+        next.tasks,
+        (record) => record,
+        'delete',
+      )
+      await syncTable(
+        'reflections',
+        current.reflections,
+        next.reflections,
+        (record) => record,
+        'delete',
+      )
+      await syncTable(
+        'learning_notes',
+        current.learningNotes,
+        next.learningNotes,
+        (record) => record,
+        'delete',
+      )
+      await syncTable(
+        'planner_items',
+        current.plannerItems,
+        next.plannerItems,
+        (record) => record,
+        'delete',
+      )
+      await syncTable(
+        'case_records',
+        current.caseRecords,
+        next.caseRecords,
+        (record) => record,
+        'delete',
+      )
       await syncTable('shifts', current.shifts, next.shifts, (record) => ({
         id: record.id,
         type: record.type,
@@ -135,44 +201,91 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
         ended_at: record.endedAt,
         patient_labels: record.patientLabels,
       }))
-      await syncTable('tasks', current.tasks, next.tasks, (record) => ({
-        id: record.id,
-        shift_id: record.shiftId,
-        title: record.title,
-        patient_label: record.patientLabel,
-        priority: record.priority,
-        due_at: record.dueAt,
-        completed_at: record.completedAt,
-        created_at: record.createdAt,
-      }), 'upsert')
-      await syncTable('handoffs', current.handoffs, next.handoffs, (record) => ({
-        id: record.id,
-        shift_id: record.shiftId,
-        patient_label: record.patientLabel,
-        situation: record.situation,
-        background: record.background,
-        assessment: record.assessment,
-        recommendation: record.recommendation,
-        updated_at: record.updatedAt,
-      }), 'upsert')
-      await syncTable('reflections', current.reflections, next.reflections, (record) => ({
-        id: record.id,
-        shift_id: record.shiftId,
-        went_well: record.wentWell,
-        difficult: record.difficult,
-        review_later: record.reviewLater,
-        confidence: record.confidence,
-        created_at: record.createdAt,
-      }), 'upsert')
-      await syncTable('learning_notes', current.learningNotes, next.learningNotes, (record) => ({
-        id: record.id,
-        shift_id: record.shiftId,
-        topic: record.topic,
-        question: record.question,
-        follow_up: record.followUp,
-        created_at: record.createdAt,
-        updated_at: record.updatedAt,
-      }), 'upsert')
+      await syncTable(
+        'tasks',
+        current.tasks,
+        next.tasks,
+        (record) => ({
+          id: record.id,
+          shift_id: record.shiftId,
+          title: record.title,
+          patient_label: record.patientLabel,
+          priority: record.priority,
+          due_at: record.dueAt,
+          completed_at: record.completedAt,
+          created_at: record.createdAt,
+        }),
+        'upsert',
+      )
+      await syncTable(
+        'planner_items',
+        current.plannerItems,
+        next.plannerItems,
+        (record) => ({
+          id: record.id,
+          title: record.title,
+          kind: record.kind,
+          date: record.date,
+          start_time: record.startTime,
+          end_time: record.endTime,
+          notes: record.notes,
+          completed_at: record.completedAt,
+          created_at: record.createdAt,
+          updated_at: record.updatedAt,
+        }),
+        'upsert',
+      )
+      await syncTable(
+        'case_records',
+        current.caseRecords,
+        next.caseRecords,
+        (record) => ({
+          id: record.id,
+          planner_item_id: record.plannerItemId,
+          entry_date: record.entryDate,
+          category: record.category,
+          learning_takeaway: record.learningTakeaway,
+          created_at: record.createdAt,
+          updated_at: record.updatedAt,
+        }),
+        'upsert',
+      )
+      await syncTable(
+        'reflections',
+        current.reflections,
+        next.reflections,
+        (record) => ({
+          id: record.id,
+          shift_id: record.shiftId,
+          planner_item_id: record.plannerItemId,
+          case_record_id: record.caseRecordId,
+          entry_date: record.entryDate,
+          went_well: record.wentWell,
+          difficult: record.difficult,
+          review_later: record.reviewLater,
+          confidence: record.confidence,
+          created_at: record.createdAt,
+        }),
+        'upsert',
+      )
+      await syncTable(
+        'learning_notes',
+        current.learningNotes,
+        next.learningNotes,
+        (record) => ({
+          id: record.id,
+          shift_id: record.shiftId,
+          planner_item_id: record.plannerItemId,
+          case_record_id: record.caseRecordId,
+          entry_date: record.entryDate,
+          topic: record.topic,
+          question: record.question,
+          follow_up: record.followUp,
+          created_at: record.createdAt,
+          updated_at: record.updatedAt,
+        }),
+        'upsert',
+      )
       return load()
     },
   }

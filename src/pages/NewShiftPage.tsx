@@ -45,7 +45,9 @@ export default function NewShiftPage() {
     }
     try {
       const id = crypto.randomUUID()
-      await update((workspace) => startShift(workspace, values, id, new Date(), user?.id))
+      await update((workspace) =>
+        startShift(workspace, values, id, new Date(), user?.id),
+      )
       toast.success('Shift started.')
       navigate(`/shifts/${id}`)
     } catch (cause) {
@@ -61,9 +63,9 @@ export default function NewShiftPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Shift planner"
+        eyebrow="Legacy shift history"
         title="Start with a simple plan."
-        description="Choose a shift type and date. Add room shorthand and general workflow tasks next."
+        description="Starting a shift is optional. For date-first planning and reminders, use Calendar & reminders instead."
       />
       {active ? (
         <Card className="max-w-xl shadow-none">

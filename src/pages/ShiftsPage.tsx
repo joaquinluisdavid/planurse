@@ -19,8 +19,8 @@ export default function ShiftsPage() {
     <>
       <PageHeader
         eyebrow="Your workspace"
-        title="Shift planner"
-        description="A focused plan for now. A useful record of where you’ve been."
+        title="Past shifts"
+        description="Existing shift history remains available, but you do not need to start a shift to plan or record learning."
         action={
           <Button asChild className="h-11">
             <Link to={active ? `/shifts/${active.id}` : '/shifts/new'}>

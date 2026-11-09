@@ -184,13 +184,13 @@ function ShiftPage() {
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
-              to={`/reflections/new?shiftId=${encodeURIComponent(shift.id)}`}
+              to={`/reflections/new?shiftId=${encodeURIComponent(shift.id)}&date=${encodeURIComponent(shift.date)}`}
               className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
             >
               Write a reflection
             </Link>
             <Link
-              to={`/learning-notes/new?shiftId=${encodeURIComponent(shift.id)}`}
+              to={`/learning-notes/new?shiftId=${encodeURIComponent(shift.id)}&date=${encodeURIComponent(shift.date)}`}
               className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
             >
               Add a learning note
@@ -381,8 +381,8 @@ function ShiftPage() {
           <DialogHeader>
             <DialogTitle>Delete this task?</DialogTitle>
             <DialogDescription>
-              “{deleting?.title}” will be removed from this shift.
-              This cannot be undone.
+              “{deleting?.title}” will be removed from this shift. This cannot
+              be undone.
             </DialogDescription>
           </DialogHeader>
           {actionError && <ErrorState message={actionError} />}

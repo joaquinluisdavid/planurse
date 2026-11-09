@@ -17,8 +17,7 @@ export function SafetyNotice() {
         Do not enter real names, medical record numbers, diagnoses, addresses,
         dates of birth, or other protected health information. Planurse does not
         replace hospital policy, clinical judgment, supervision, or approved
-        clinical references. Handoffs are preparation aids, not official medical
-        records.
+        clinical references. Personal notes are not official medical records.
       </p>
     </aside>
   )
