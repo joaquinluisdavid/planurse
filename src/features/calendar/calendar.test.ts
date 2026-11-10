@@ -16,6 +16,8 @@ const values = {
   startTime: '14:00',
   endTime: '14:30',
   notes: 'Bring questions about time management.',
+  caseCategory: null,
+  caseTakeaway: '',
 }
 const userId = '00000000-0000-4000-8000-000000000001'
 
@@ -36,6 +38,10 @@ describe('calendar planning', () => {
     ).toBe(false)
     expect(
       calendarEntrySchema.safeParse({ ...values, endTime: '13:00' }).success,
+    ).toBe(true)
+    expect(
+      calendarEntrySchema.safeParse({ ...values, endTime: values.startTime })
+        .success,
     ).toBe(false)
     expect(
       calendarEntrySchema.safeParse({ ...values, date: '2026-02-30' }).success,

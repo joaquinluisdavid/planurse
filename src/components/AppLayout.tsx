@@ -9,7 +9,8 @@ import {
   Settings,
   Menu,
   LogOut,
-  Sprout,
+  CalendarCheck2,
+  Stethoscope,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,8 +40,9 @@ function Brand() {
       to="/dashboard"
       className="flex items-center gap-3 text-xl font-bold tracking-tight"
     >
-      <span className="bg-primary flex size-10 items-center justify-center rounded-xl text-white">
-        <Sprout aria-hidden="true" className="size-6" />
+      <span className="bg-primary relative flex size-10 items-center justify-center rounded-xl text-white">
+        <CalendarCheck2 aria-hidden="true" className="size-6" />
+        <Stethoscope aria-hidden="true" className="absolute -right-1 -bottom-1 size-4 rounded-full bg-[#e38f7c] p-0.5 text-[#713b35]" />
       </span>
       planurse<span className="sr-only"> home</span>
     </Link>
@@ -96,7 +98,7 @@ export function AppLayout() {
       >
         Skip to content
       </a>
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-[#fbfcf8] px-5 py-7 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-[#eef5f9] px-5 py-7 lg:flex">
         <Brand />
         <p className="text-muted-foreground mt-8 mb-3 px-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
           Your workspace

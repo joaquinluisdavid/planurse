@@ -8,18 +8,18 @@
   --color-card-foreground: var(--foreground);
   --color-popover: #ffffff;
   --color-popover-foreground: var(--foreground);
-  --color-primary: #195b50;
+  --color-primary: #1f5f87;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #e9efeb;
-  --color-secondary-foreground: #195b50;
-  --color-muted: #f1f1ec;
-  --color-muted-foreground: #59635f;
-  --color-accent: #e9efeb;
-  --color-accent-foreground: #195b50;
+  --color-secondary: #e5f0f7;
+  --color-secondary-foreground: #245676;
+  --color-muted: #f3f5f4;
+  --color-muted-foreground: #5b6870;
+  --color-accent: #f5dfd6;
+  --color-accent-foreground: #7b4037;
   --color-destructive: #b42332;
-  --color-border: #dedfd6;
-  --color-input: #b9c1b8;
-  --color-ring: #195b50;
+  --color-border: #d6e0e6;
+  --color-input: #b5c7d2;
+  --color-ring: #1f5f87;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
@@ -27,8 +27,8 @@
 }
 
 :root {
-  --background: #f7f7f2;
-  --foreground: #25332e;
+  --background: #f7f9fa;
+  --foreground: #243746;
   --radius: 0.75rem;
   font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;

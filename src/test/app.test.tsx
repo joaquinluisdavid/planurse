@@ -159,7 +159,7 @@ describe('authenticated account boundary', () => {
   })
   it('opens My Profile from the account name in the desktop header', async () => {
     const { user } = mount('/dashboard')
-    await screen.findByRole('heading', { name: 'Plan at your own pace.' })
+    await screen.findByRole('heading', { name: 'What’s on your calendar, Alex?' })
     await user.click(screen.getByRole('link', { name: 'Open My Profile' }))
     expect(
       await screen.findByRole('heading', { name: 'My Profile' }),
@@ -296,7 +296,7 @@ describe('planner interactions with mocked data access', () => {
   })
   it('shows upcoming calendar entries on the dashboard and opens the calendar', async () => {
     const { user } = mount('/dashboard')
-    await screen.findByRole('heading', { name: 'Plan at your own pace.' })
+    await screen.findByRole('heading', { name: 'What’s on your calendar, Alex?' })
     await user.click(screen.getByRole('link', { name: 'Orientation check-in' }))
     expect(
       await screen.findByRole('heading', { name: 'Calendar & reminders' }),
@@ -472,8 +472,9 @@ describe('planner interactions with mocked data access', () => {
       repository(emptyRecordWorkspace()),
     )
     await screen.findByRole('heading', { name: 'Calendar & reminders' })
-    await user.click(screen.getByRole('button', { name: 'Log case handled' }))
+    await user.click(screen.getByRole('button', { name: 'Add entry' }))
     const dialog = screen.getByRole('dialog')
+    await user.type(within(dialog).getByLabelText('Title'), 'Learning check-in')
     await user.selectOptions(
       within(dialog).getByLabelText('General case category'),
       'patient-education',
@@ -482,7 +483,7 @@ describe('planner interactions with mocked data access', () => {
       within(dialog).getByLabelText('General learning takeaway (optional)'),
       'I adapted the explanation to support clear communication.',
     )
-    await user.click(within(dialog).getByRole('button', { name: 'Save entry' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Add entry' }))
     expect(await screen.findByText(/patient education/i)).toBeInTheDocument()
     expect(
       screen.getByText(
@@ -612,7 +613,7 @@ describe('loading, error and empty states', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(
-      await screen.findByRole('heading', { name: 'Plan at your own pace.' }),
+      await screen.findByRole('heading', { name: 'What’s on your calendar, Alex?' }),
     ).toBeInTheDocument()
   })
   it('shows useful empty dashboard and history states', async () => {
@@ -632,7 +633,7 @@ describe('loading, error and empty states', () => {
     expect(
       screen.getByText('Your reflections will appear here.'),
     ).toBeInTheDocument()
-    await user.click(screen.getByRole('link', { name: 'Open calendar' }))
+    await user.click(screen.getByRole('link', { name: 'Add calendar entry' }))
     expect(await screen.findByText('Nothing on this day')).toBeInTheDocument()
   })
 })

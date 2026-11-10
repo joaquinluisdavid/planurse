@@ -13,11 +13,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { useWorkspace } from '@/data/useWorkspace'
+import { useAuth } from '@/auth/useAuth'
 import { useNow } from '@/lib/useNow'
 import { formatDate, localDate } from '@/lib/dates'
 
 export default function DashboardPage() {
   const { data, loading, error, reload } = useWorkspace()
+  const { profile, user } = useAuth()
   const now = useNow()
   if (loading) return <LoadingState />
   if (error || !data)
@@ -46,20 +48,14 @@ export default function DashboardPage() {
   const recentNotes = [...data.learningNotes]
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 2)
+  const displayName =
+    profile?.nickname.trim() || profile?.firstName.trim() || user?.email?.split('@')[0] || 'there'
   return (
     <>
       <PageHeader
         eyebrow={formatDate(today)}
-        title="Plan at your own pace."
+        title={`What’s on your calendar, ${displayName}?`}
         description="See what is coming up, capture reminders when convenient, and reflect whenever you have a moment."
-        action={
-          <Button asChild className="h-11">
-            <Link to="/calendar">
-              <Plus aria-hidden="true" />
-              Open calendar
-            </Link>
-          </Button>
-        }
       />
       <div className="mb-6 grid gap-3 sm:grid-cols-3">
         {[
@@ -159,7 +155,7 @@ export default function DashboardPage() {
               ) : (
                 <EmptyState
                   title="Your calendar is open"
-                  description="Add a responsibility or a reminder whenever you have a moment. No formal shift log required."
+                  description="Add a responsibility or a reminder whenever you have a moment."
                   action={
                     <Button asChild className="h-11">
                       <Link to="/calendar">
@@ -178,7 +174,7 @@ export default function DashboardPage() {
             <CardContent className="p-5">
               <h2 className="mb-3 text-lg font-semibold">Capture a moment</h2>
               <p className="text-muted-foreground mb-4 text-sm">
-                No need to wait until a shift ends. Add a reminder, learning
+                Add a reminder, learning
                 note, or reflection on a date that works for you.
               </p>
               <div className="grid gap-2">

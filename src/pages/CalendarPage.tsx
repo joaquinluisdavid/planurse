@@ -30,7 +30,6 @@ import { Label } from '@/components/ui/label'
 import { useAuth } from '@/auth/useAuth'
 import { useWorkspace } from '@/data/useWorkspace'
 import type { PlannerItem } from '@/data/models'
-import type { CaseRecord } from '@/data/models'
 import {
   completeCalendarEntry,
   deleteCalendarEntry,
@@ -39,12 +38,6 @@ import {
   calendarEntrySchema,
   type CalendarEntryValues,
 } from '@/features/calendar/mutations'
-import {
-  caseRecordFormSchema,
-  deleteCaseRecord,
-  saveCaseRecord,
-  type CaseRecordFormValues,
-} from '@/features/records/mutations'
 import { formatDate, localDate } from '@/lib/dates'
 import { errorMessage } from '@/lib/errors'
 
@@ -55,6 +48,8 @@ const blankEntry: CalendarEntryValues = {
   startTime: '',
   endTime: '',
   notes: '',
+  caseCategory: null,
+  caseTakeaway: '',
 }
 const caseCategories = [
   { value: 'care-coordination', label: 'Care coordination' },
@@ -64,12 +59,6 @@ const caseCategories = [
   { value: 'clinical-skills-practice', label: 'Clinical skills practice' },
   { value: 'other-learning', label: 'Other learning experience' },
 ] as const
-const blankCase: CaseRecordFormValues = {
-  plannerItemId: '',
-  entryDate: localDate(),
-  category: 'other-learning',
-  learningTakeaway: '',
-}
 const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const monthLabel = new Intl.DateTimeFormat(undefined, {
   month: 'long',
@@ -82,6 +71,11 @@ const timeLabel = (time: string | null) =>
         minute: '2-digit',
       }).format(new Date(`2000-01-01T${time}`))
     : ''
+const timeRangeLabel = (start: string | null, end: string | null) => {
+  if (!start) return ''
+  const overnight = Boolean(end && end < start)
+  return `${timeLabel(start)}${end ? `–${timeLabel(end)}` : ''}${overnight ? ' · overnight' : ''}`
+}
 
 function monthStart(date: Date) {
   return new Date(date.getFullYear(), date.getMonth(), 1)
@@ -113,12 +107,6 @@ export default function CalendarPage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [dragged, setDragged] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PlannerItem | null>(null)
-  const [caseEditor, setCaseEditor] = useState<CaseRecord | 'new' | null>(null)
-  const [caseValues, setCaseValues] = useState<CaseRecordFormValues>(blankCase)
-  const [caseError, setCaseError] = useState<string | null>(null)
-  const [deleteCaseTarget, setDeleteCaseTarget] = useState<CaseRecord | null>(
-    null,
-  )
   const [actionError, setActionError] = useState<string | null>(null)
 
   const cells = useMemo(() => calendarCells(visibleMonth), [visibleMonth])
@@ -127,6 +115,7 @@ export default function CalendarPage() {
     return (
       <ErrorState message={error ?? 'Workspace unavailable.'} retry={reload} />
     )
+  const workspace = data
   const items = data.plannerItems ?? []
   const selectedItems = items
     .filter((item) => item.date === selectedDate)
@@ -152,6 +141,9 @@ export default function CalendarPage() {
     setEditor('new')
   }
   function openEdit(item: PlannerItem) {
+    const linkedCase = workspace.caseRecords.find(
+      (entry) => entry.plannerItemId === item.id,
+    )
     setValues({
       title: item.title,
       kind: item.kind,
@@ -159,25 +151,12 @@ export default function CalendarPage() {
       startTime: item.startTime ?? '',
       endTime: item.endTime ?? '',
       notes: item.notes,
+      caseCategory: linkedCase?.category ?? null,
+      caseTakeaway: linkedCase?.learningTakeaway ?? '',
     })
     setErrors({})
     setSaveError(null)
     setEditor(item)
-  }
-  function openNewCase(date = selectedDate, plannerItemId = '') {
-    setCaseValues({ ...blankCase, entryDate: date, plannerItemId })
-    setCaseError(null)
-    setCaseEditor('new')
-  }
-  function openEditCase(entry: CaseRecord) {
-    setCaseValues({
-      plannerItemId: entry.plannerItemId ?? '',
-      entryDate: entry.entryDate,
-      category: entry.category,
-      learningTakeaway: entry.learningTakeaway,
-    })
-    setCaseError(null)
-    setCaseEditor(entry)
   }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -222,42 +201,13 @@ export default function CalendarPage() {
       setActionError(`Cannot move calendar entry: ${errorMessage(cause)}`)
     }
   }
-  async function submitCase(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    if (!user || busy) return
-    const result = caseRecordFormSchema.safeParse(caseValues)
-    if (!result.success) {
-      setCaseError(
-        result.error.issues[0]?.message ?? 'Check the entry and try again.',
-      )
-      return
-    }
-    const editing = caseEditor !== 'new' && caseEditor !== null
-    const id = editing ? caseEditor.id : crypto.randomUUID()
-    setBusy(true)
-    setCaseError(null)
-    try {
-      await update((workspace) =>
-        saveCaseRecord(workspace, result.data, user.id, id, editing),
-      )
-      setSelectedDate(result.data.entryDate)
-      setCaseEditor(null)
-      toast.success(
-        editing ? 'Case-handled entry updated.' : 'Case-handled entry saved.',
-      )
-    } catch (cause) {
-      setCaseError(`Cannot save case-handled entry: ${errorMessage(cause)}`)
-    } finally {
-      setBusy(false)
-    }
-  }
 
   return (
     <>
       <PageHeader
         eyebrow="Plan ahead · Capture when convenient"
         title="Calendar & reminders"
-        description="Add a schedule item or reminder whenever it suits you—no shift start required. Keep personal notes and reflections attached to a date or calendar item."
+        description="Add a schedule item or reminder whenever it suits you. Keep personal notes and reflections attached to a date or calendar item."
         action={
           <Button className="h-11" onClick={() => openNew()}>
             <Plus aria-hidden="true" />
@@ -390,7 +340,9 @@ export default function CalendarPage() {
                               className="size-3 shrink-0"
                             />
                             {item.startTime && (
-                              <span>{timeLabel(item.startTime)}</span>
+                              <span>
+                                {timeRangeLabel(item.startTime, item.endTime)}
+                              </span>
                             )}
                             {item.title}
                           </span>
@@ -465,8 +417,7 @@ export default function CalendarPage() {
                         {item.startTime && (
                           <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
                             <Clock3 aria-hidden="true" className="size-3" />
-                            {timeLabel(item.startTime)}
-                            {item.endTime ? `–${timeLabel(item.endTime)}` : ''}
+                            {timeRangeLabel(item.startTime, item.endTime)}
                           </p>
                         )}
                         {item.notes && (
@@ -546,7 +497,7 @@ export default function CalendarPage() {
             ) : (
               <EmptyState
                 title="Nothing on this day"
-                description="Add a schedule item or a simple reminder—there is no shift log to start."
+                description="Add a schedule item or a simple reminder."
                 action={
                   <Button
                     className="h-11"
@@ -642,14 +593,9 @@ export default function CalendarPage() {
                     />
                     Cases handled
                   </h3>
-                  <Button
-                    variant="outline"
-                    className="min-h-11"
-                    onClick={() => openNewCase(selectedDate)}
-                  >
-                    <Plus aria-hidden="true" />
-                    Log case handled
-                  </Button>
+                  <span className="text-muted-foreground text-xs">
+                    Add while creating an entry
+                  </span>
                 </div>
                 <p className="text-muted-foreground mb-3 text-xs">
                   Broad categories only; no patient or case-identifying details.
@@ -674,26 +620,6 @@ export default function CalendarPage() {
                                 {caseRecord.learningTakeaway}
                               </p>
                             )}
-                          </div>
-                          <div className="flex shrink-0 gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-11"
-                              aria-label="Edit case-handled entry"
-                              onClick={() => openEditCase(caseRecord)}
-                            >
-                              <Pencil aria-hidden="true" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="size-11"
-                              aria-label="Delete case-handled entry"
-                              onClick={() => setDeleteCaseTarget(caseRecord)}
-                            >
-                              <Trash2 aria-hidden="true" />
-                            </Button>
                           </div>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-3">
@@ -846,7 +772,9 @@ export default function CalendarPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="calendar-end">End time (optional)</Label>
+                <Label htmlFor="calendar-end">
+                  End time (optional)
+                </Label>
                 <Input
                   id="calendar-end"
                   type="time"
@@ -888,6 +816,62 @@ export default function CalendarPage() {
                 maxLength={2000}
                 disabled={busy}
               />
+            </div>
+            <div className="border-primary/20 bg-primary/5 space-y-4 rounded-lg border p-4">
+              <div>
+                <h3 className="font-semibold">Case handled (optional)</h3>
+                <p className="text-muted-foreground mt-1 text-xs">
+                  Add a broad work category while creating this entry. No
+                  patient or case-identifying details.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="calendar-case-category">
+                  General case category
+                </Label>
+                <select
+                  id="calendar-case-category"
+                  className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                  value={values.caseCategory ?? ''}
+                  onChange={(event) =>
+                    setValues((current) => ({
+                      ...current,
+                      caseCategory: event.target.value
+                        ? (event.target
+                            .value as CalendarEntryValues['caseCategory'])
+                        : null,
+                    }))
+                  }
+                  disabled={busy}
+                >
+                  <option value="">No case handled entry</option>
+                  {caseCategories.map((category) => (
+                    <option key={category.value} value={category.value}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {values.caseCategory && (
+                <div className="space-y-2">
+                  <Label htmlFor="calendar-case-takeaway">
+                    General learning takeaway (optional)
+                  </Label>
+                  <textarea
+                    id="calendar-case-takeaway"
+                    className="border-input focus-visible:ring-ring/50 min-h-20 w-full rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+                    value={values.caseTakeaway}
+                    onChange={(event) =>
+                      setValues((current) => ({
+                        ...current,
+                        caseTakeaway: event.target.value,
+                      }))
+                    }
+                    maxLength={1000}
+                    disabled={busy}
+                  />
+                </div>
+              )}
             </div>
             <p className="text-muted-foreground text-xs">
               Use general, non-identifying reminders only. Do not put patient
@@ -951,184 +935,6 @@ export default function CalendarPage() {
                   )
                   toast.success('Calendar entry deleted.')
                   setDeleteTarget(null)
-                } catch (cause) {
-                  setActionError(errorMessage(cause))
-                } finally {
-                  setBusy(false)
-                }
-              }}
-            >
-              Delete
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={caseEditor !== null}
-        onOpenChange={(open) => {
-          if (!open && !busy) setCaseEditor(null)
-        }}
-      >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>
-              {caseEditor === 'new'
-                ? 'Log case handled'
-                : 'Edit case-handled entry'}
-            </DialogTitle>
-            <DialogDescription>
-              Track a broad work category and general learning takeaway. This is
-              not a patient list. Never add patient or uniquely identifying case
-              details.
-            </DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={submitCase} noValidate>
-            <div className="space-y-2">
-              <Label htmlFor="case-entry-date">Date</Label>
-              <Input
-                id="case-entry-date"
-                type="date"
-                value={caseValues.entryDate}
-                onChange={(event) =>
-                  setCaseValues((current) => ({
-                    ...current,
-                    entryDate: event.target.value,
-                    plannerItemId: '',
-                  }))
-                }
-                disabled={busy}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="case-entry-category">General case category</Label>
-              <select
-                id="case-entry-category"
-                className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
-                value={caseValues.category}
-                onChange={(event) =>
-                  setCaseValues((current) => ({
-                    ...current,
-                    category: event.target
-                      .value as CaseRecordFormValues['category'],
-                  }))
-                }
-                disabled={busy}
-              >
-                {caseCategories.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="case-entry-calendar">
-                Calendar entry (optional)
-              </Label>
-              <select
-                id="case-entry-calendar"
-                className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
-                value={caseValues.plannerItemId}
-                onChange={(event) => {
-                  const item = data.plannerItems.find(
-                    (entry) => entry.id === event.target.value,
-                  )
-                  setCaseValues((current) => ({
-                    ...current,
-                    plannerItemId: event.target.value,
-                    ...(item ? { entryDate: item.date } : {}),
-                  }))
-                }}
-                disabled={busy}
-              >
-                <option value="">No linked calendar entry</option>
-                {data.plannerItems.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.date} · {item.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="case-entry-takeaway">
-                General learning takeaway (optional)
-              </Label>
-              <textarea
-                id="case-entry-takeaway"
-                className="border-input focus-visible:ring-ring/50 min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
-                value={caseValues.learningTakeaway}
-                onChange={(event) =>
-                  setCaseValues((current) => ({
-                    ...current,
-                    learningTakeaway: event.target.value,
-                  }))
-                }
-                maxLength={1000}
-                disabled={busy}
-              />
-              <p className="text-muted-foreground text-xs">
-                Use general learning language only—no patient demographics,
-                diagnoses, identifiers, room numbers, or unique details.
-              </p>
-            </div>
-            {caseError && <ErrorState message={caseError} />}
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11"
-                disabled={busy}
-                onClick={() => setCaseEditor(null)}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" className="h-11" disabled={busy}>
-                {busy
-                  ? 'Saving…'
-                  : caseEditor === 'new'
-                    ? 'Save entry'
-                    : 'Save changes'}
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <Dialog
-        open={!!deleteCaseTarget}
-        onOpenChange={(open) => {
-          if (!open && !busy) setDeleteCaseTarget(null)
-        }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Delete this case-handled entry?</DialogTitle>
-            <DialogDescription>
-              Linked notes and reflections remain saved, with the case link
-              cleared.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              className="h-11"
-              disabled={busy}
-              onClick={() => setDeleteCaseTarget(null)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              className="h-11"
-              disabled={busy}
-              onClick={async () => {
-                if (!deleteCaseTarget) return
-                setBusy(true)
-                try {
-                  await update((workspace) =>
-                    deleteCaseRecord(workspace, deleteCaseTarget.id),
-                  )
-                  toast.success('Case-handled entry deleted.')
-                  setDeleteCaseTarget(null)
                 } catch (cause) {
                   setActionError(errorMessage(cause))
                 } finally {

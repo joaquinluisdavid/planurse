@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { PlannerItem, Workspace } from '@/data/models'
 import { localDate } from '@/lib/dates'
+import { caseCategorySchema } from '@/data/models'
 
 export const calendarEntrySchema = z
   .object({
@@ -10,6 +11,8 @@ export const calendarEntrySchema = z
     startTime: z.string(),
     endTime: z.string(),
     notes: z.string().trim().max(2000),
+    caseCategory: caseCategorySchema.nullable().default(null),
+    caseTakeaway: z.string().trim().max(1000).default(''),
   })
   .superRefine((entry, context) => {
     const validDate = new Date(`${entry.date}T12:00:00`)
@@ -40,11 +43,11 @@ export const calendarEntrySchema = z
         path: ['endTime'],
         message: 'Choose a valid time.',
       })
-    if (entry.startTime && entry.endTime && entry.endTime <= entry.startTime)
+    if (entry.startTime && entry.endTime && entry.endTime === entry.startTime)
       context.addIssue({
         code: 'custom',
         path: ['endTime'],
-        message: 'End time must be after start time.',
+        message: 'End time must differ from start time.',
       })
   })
 
@@ -84,27 +87,58 @@ export function saveCalendarEntry(
     createdAt: existing?.createdAt ?? now.toISOString(),
     updatedAt: now.toISOString(),
   }
+  const linkedCase = workspace.caseRecords.find(
+    (item) => item.plannerItemId === id,
+  )
+  const caseRecordId = linkedCase?.id ?? crypto.randomUUID()
+  const caseRecords = valid.caseCategory
+    ? linkedCase
+      ? workspace.caseRecords.map((item) =>
+          item.id === linkedCase.id
+            ? {
+                ...item,
+                entryDate: valid.date,
+                category: valid.caseCategory!,
+                learningTakeaway: valid.caseTakeaway,
+                updatedAt: now.toISOString(),
+              }
+            : item,
+        )
+      : [
+          ...workspace.caseRecords,
+          {
+            id: caseRecordId,
+            userId,
+            plannerItemId: id,
+            entryDate: valid.date,
+            category: valid.caseCategory,
+            learningTakeaway: valid.caseTakeaway,
+            createdAt: now.toISOString(),
+            updatedAt: now.toISOString(),
+          },
+        ]
+    : workspace.caseRecords.filter((item) => item.id !== linkedCase?.id)
+  const removedCaseId = !valid.caseCategory ? linkedCase?.id : null
   const linkedCases = editing ? linkedCaseIds(workspace, id) : new Set<string>()
-  const caseRecords = editing
-    ? workspace.caseRecords.map((item) =>
-        item.plannerItemId === id
-          ? { ...item, entryDate: valid.date, updatedAt: now.toISOString() }
-          : item,
-      )
-    : workspace.caseRecords
   return {
     ...workspace,
     plannerItems: editing
       ? workspace.plannerItems.map((item) => (item.id === id ? entry : item))
       : [...workspace.plannerItems, entry],
-    reflections: editing
+    reflections: removedCaseId
       ? workspace.reflections.map((item) =>
-          item.plannerItemId === id ||
-          (item.caseRecordId && linkedCases.has(item.caseRecordId))
-            ? { ...item, entryDate: valid.date }
+          item.caseRecordId === removedCaseId
+            ? { ...item, caseRecordId: null }
             : item,
         )
-      : workspace.reflections,
+      : editing
+        ? workspace.reflections.map((item) =>
+            item.plannerItemId === id ||
+            (item.caseRecordId && linkedCases.has(item.caseRecordId))
+              ? { ...item, entryDate: valid.date }
+              : item,
+          )
+        : workspace.reflections,
     learningNotes: editing
       ? workspace.learningNotes.map((item) =>
           item.plannerItemId === id ||

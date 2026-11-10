@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Sprout, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import { CalendarCheck2, ArrowRight, Eye, EyeOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { SafetyNotice } from '@/components/SafetyNotice'
@@ -178,7 +178,7 @@ export function AccountEntryPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-6 p-5 py-12">
       <Link to="/" className="flex items-center gap-2 text-xl font-bold">
-        <Sprout aria-hidden="true" className="text-primary size-7" />
+        <CalendarCheck2 aria-hidden="true" className="text-primary size-7" />
         planurse
       </Link>
       <Card className="shadow-none">
