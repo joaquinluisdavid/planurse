@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react'
-import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -7,7 +7,6 @@ import {
   NotebookPen,
   Settings,
   Menu,
-  LogOut,
   CalendarCheck2,
   Stethoscope,
 } from 'lucide-react'
@@ -22,10 +21,9 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { SafetyNotice } from './SafetyNotice'
-import { ErrorState, LoadingState } from './Feedback'
+import { LoadingState } from './Feedback'
 import { useAuth } from '@/auth/useAuth'
 import { cn } from '@/lib/utils'
-import { errorMessage } from '@/lib/errors'
 import { useWorkspace } from '@/data/useWorkspace'
 
 const navigation = [
@@ -98,24 +96,13 @@ function ThemeSync() {
 
 export function AppLayout() {
   const [open, setOpen] = useState(false)
-  const [signOutError, setSignOutError] = useState<string | null>(null)
-  const { user, profile, signOut } = useAuth()
-  const navigate = useNavigate()
+  const { user, profile } = useAuth()
   const location = useLocation()
   const demoMode = location.pathname.startsWith('/demo')
   const roleLabel =
     profile?.role === 'student-nurse' ? 'Student Nurse' : 'Registered Nurse'
   const displayName =
     profile?.nickname.trim() || profile?.firstName || user?.email
-  async function exitAccount() {
-    setSignOutError(null)
-    try {
-      await signOut()
-      navigate('/login', { replace: true })
-    } catch (cause) {
-      setSignOutError(`Cannot sign out: ${errorMessage(cause)}`)
-    }
-  }
   return (
     <div className="min-h-screen">
       <ThemeSync />
@@ -166,14 +153,6 @@ export function AppLayout() {
             <Settings aria-hidden="true" className="size-5" />
             Account settings
           </NavLink>
-          <Button
-            variant="ghost"
-            className="text-destructive/80 hover:bg-destructive/10 hover:text-destructive mt-1 h-11 w-full justify-start"
-            onClick={exitAccount}
-          >
-            <LogOut aria-hidden="true" />
-            Sign out
-          </Button>
         </div>
       </aside>
       <div className="lg:ml-72">
@@ -182,6 +161,23 @@ export function AppLayout() {
             <Brand />
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              to="/profile"
+              aria-label="Open profile picture"
+              className="rounded-full"
+            >
+              {profile?.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt=""
+                  className="size-10 rounded-full border object-cover"
+                />
+              ) : (
+                <span className="bg-secondary text-primary flex size-10 items-center justify-center rounded-full border text-sm font-semibold">
+                  {(displayName?.[0] ?? 'A').toUpperCase()}
+                </span>
+              )}
+            </Link>
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -228,14 +224,6 @@ export function AppLayout() {
                     <Settings aria-hidden="true" className="size-5" />
                     Account settings
                   </NavLink>
-                  <Button
-                    variant="outline"
-                    className="border-destructive/25 text-destructive/80 hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive mt-1 h-11 w-full justify-start"
-                    onClick={exitAccount}
-                  >
-                    <LogOut aria-hidden="true" />
-                    Sign out
-                  </Button>
                 </SheetFooter>
               </SheetContent>
             </Sheet>
@@ -250,11 +238,6 @@ export function AppLayout() {
             <div className="border-primary/20 bg-primary/5 text-muted-foreground mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
               <span><strong className="text-foreground">Demo mode.</strong> Fictional data only. Changes stay in this browser session.</span>
               <Link className="text-primary font-medium underline" to="/login">Open the real app</Link>
-            </div>
-          )}
-          {signOutError && (
-            <div className="mb-5">
-              <ErrorState message={signOutError} />
             </div>
           )}
           <Suspense fallback={<LoadingState />}>

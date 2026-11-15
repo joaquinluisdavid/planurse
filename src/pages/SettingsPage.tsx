@@ -4,6 +4,14 @@ import type { CSSProperties } from 'react'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useAuth } from '@/auth/useAuth'
 import { useWorkspace } from '@/data/useWorkspace'
 import { errorMessage } from '@/lib/errors'
@@ -13,6 +21,7 @@ export default function SettingsPage() {
   const { data, update } = useWorkspace()
   const navigate = useNavigate()
   const [busy, setBusy] = useState(false)
+  const [signOutOpen, setSignOutOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [themeError, setThemeError] = useState<string | null>(null)
   const currentTheme = data?.dashboardSettings[0]?.theme ?? 'ocean'
@@ -100,6 +109,19 @@ export default function SettingsPage() {
       setThemeError(
         cause instanceof Error ? cause.message : 'Cannot change theme.',
       )
+    }
+  }
+  async function confirmSignOut() {
+    setBusy(true)
+    setError(null)
+    try {
+      await signOut()
+      navigate('/login', { replace: true })
+    } catch (cause) {
+      setError(`Cannot sign out: ${errorMessage(cause)}`)
+      setSignOutOpen(false)
+    } finally {
+      setBusy(false)
     }
   }
   return (
@@ -240,8 +262,8 @@ export default function SettingsPage() {
                   {accent.name}
                 </button>
               ))}
-              <div
-                className={`border-input flex h-9 items-center gap-2 rounded-full border px-2 text-xs font-medium ${!accentOptions.some((accent) => accent.value === selectedPrimary.toLowerCase()) ? 'ring-2 ring-offset-1' : ''}`}
+              <label
+                className={`border-input flex h-9 cursor-pointer items-center gap-2 rounded-full border px-2 text-xs font-medium ${!accentOptions.some((accent) => accent.value === selectedPrimary.toLowerCase()) ? 'ring-2 ring-offset-1' : ''}`}
                 style={
                   !accentOptions.some(
                     (accent) => accent.value === selectedPrimary.toLowerCase(),
@@ -250,29 +272,25 @@ export default function SettingsPage() {
                         borderColor: selectedPrimary,
                         '--tw-ring-color': selectedPrimary,
                       } as CSSProperties)
-                    : undefined
+                      : undefined
                 }
+                title="Choose a custom accent color"
               >
-                <label
-                  className="relative size-5 cursor-pointer overflow-hidden rounded-full"
-                  title="Choose a custom accent color"
-                >
-                  <span
-                    className="absolute inset-0 rounded-full border border-black/15"
-                    style={{ backgroundColor: selectedPrimary }}
-                  />
-                  <input
-                    type="color"
-                    value={selectedPrimary}
-                    aria-label="Choose custom accent color"
-                    onChange={(event) =>
+                <span
+                  className="size-5 cursor-pointer rounded-full border border-black/15"
+                  style={{ backgroundColor: selectedPrimary }}
+                />
+                <input
+                  type="color"
+                  value={selectedPrimary}
+                  aria-label="Choose custom accent color"
+                  onChange={(event) =>
                       void saveAppearance(currentTheme, event.target.value)
-                    }
-                    className="absolute inset-0 size-full cursor-pointer opacity-0"
-                  />
-                </label>
+                  }
+                  className="sr-only"
+                />
                 <span>Custom</span>
-              </div>
+              </label>
             </div>
           </CardContent>
         </Card>
@@ -301,24 +319,44 @@ export default function SettingsPage() {
               variant="outline"
               className="mt-4 h-11"
               disabled={busy}
-              onClick={async () => {
-                setBusy(true)
-                setError(null)
-                try {
-                  await signOut()
-                  navigate('/login', { replace: true })
-                } catch (cause) {
-                  setError(`Cannot sign out: ${errorMessage(cause)}`)
-                } finally {
-                  setBusy(false)
-                }
-              }}
+              onClick={() => setSignOutOpen(true)}
             >
-              {busy ? 'Signing out…' : 'Sign out'}
+              Sign out
             </Button>
           </CardContent>
         </Card>
       </div>
+      <Dialog
+        open={signOutOpen}
+        onOpenChange={(open) => {
+          if (!busy) setSignOutOpen(open)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Sign out of Planurse?</DialogTitle>
+            <DialogDescription>
+              You will need to sign in again to access your workspace.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setSignOutOpen(false)}
+              disabled={busy}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => void confirmSignOut()}
+              disabled={busy}
+            >
+              {busy ? 'Signing out…' : 'Sign out'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

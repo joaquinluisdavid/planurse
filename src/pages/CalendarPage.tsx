@@ -322,7 +322,7 @@ export default function CalendarPage() {
                             setSelectedDate(key)
                             openEdit(item)
                           }}
-                          className={`w-full truncate rounded px-1 py-1 text-left text-[10px] sm:text-xs ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-accent/70 text-accent-foreground'} ${item.completedAt ? 'line-through opacity-60' : ''}`}
+                          className={`w-full truncate rounded px-1 py-1 text-left text-[10px] sm:text-xs ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-yellow-100 text-yellow-800'} ${item.completedAt ? 'line-through opacity-60' : ''}`}
                           title={`${item.startTime ? `${timeLabel(item.startTime)} ` : ''}${item.title}`}
                           aria-label={`${item.startTime ? `${timeLabel(item.startTime)} ` : ''}${item.title} on ${formatDate(key)}. Select to edit; drag to reschedule.`}
                         >
@@ -388,7 +388,7 @@ export default function CalendarPage() {
                         <>
                           <div className="flex items-start gap-3">
                             <span
-                              className={`mt-0.5 rounded-lg p-2 ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-accent text-accent-foreground'}`}
+                              className={`mt-0.5 rounded-lg p-2 ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-yellow-100 text-yellow-800'}`}
                             >
                               {item.kind === 'schedule' ? (
                                 <CalendarDays
@@ -428,7 +428,7 @@ export default function CalendarPage() {
                               className={
                                 item.kind === 'schedule'
                                   ? undefined
-                                  : 'bg-accent text-accent-foreground'
+                                  : 'bg-yellow-100 text-yellow-800'
                               }
                             >
                               {item.kind === 'schedule'

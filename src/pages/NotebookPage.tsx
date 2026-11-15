@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
-import { Eraser, Pencil, Plus, Redo2, Trash2, Undo2, X } from 'lucide-react'
+import {
+  Eraser,
+  Pencil,
+  Plus,
+  Redo2,
+  Trash2,
+  Undo2,
+  X,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { PageHeader } from '@/components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '@/components/Feedback'
@@ -56,7 +64,22 @@ function NotebookCanvas({
       const context = canvas.getContext('2d')
       if (!context) return
       context.clearRect(0, 0, canvas.width, canvas.height)
-      if (value) context.drawImage(image, 0, 0)
+      if (value) {
+        const isPreviousFullscreenPage =
+          image.naturalWidth === 720 && image.naturalHeight === 1100
+        if (isPreviousFullscreenPage) {
+          const scale = canvas.width / image.naturalWidth
+          context.drawImage(
+            image,
+            0,
+            0,
+            image.naturalWidth * scale,
+            image.naturalHeight * scale,
+          )
+        } else {
+          context.drawImage(image, 0, 0)
+        }
+      }
       setReady(true)
     }
     if (!value) {
@@ -170,7 +193,7 @@ function NotebookCanvas({
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Label htmlFor="notebook-canvas">Handwritten page</Label>
+        <Label htmlFor="notebook-canvas">Handwritten notes</Label>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1" aria-label="Pen color">
             {[
@@ -213,7 +236,7 @@ function NotebookCanvas({
             </label>
           </div>
           <details className="relative" aria-label="Pen size">
-            <summary className="border-input bg-background flex h-8 cursor-pointer list-none items-center gap-2 rounded-md border px-2 text-xs marker:hidden">
+            <summary className="border-input bg-background flex h-8 list-none cursor-pointer items-center gap-2 rounded-md border px-2 font-sans text-xs font-medium marker:hidden">
               Stroke
               <span
                 className="bg-foreground block w-7 rounded-full"
@@ -286,12 +309,15 @@ function NotebookCanvas({
           </Button>
         </div>
       </div>
+      <p className="text-muted-foreground text-xs">
+        Write anything you want to remember on this page.
+      </p>
       <canvas
         ref={canvasRef}
         id="notebook-canvas"
         width={1200}
-        height={520}
-        className="bg-background w-full touch-none rounded-md border bg-[linear-gradient(#dbe7ee_1px,transparent_1px)] bg-size-[100%_32px]"
+        height={2000}
+        className="bg-background aspect-[1200/2000] h-auto w-full touch-none rounded-md border bg-[linear-gradient(#dbe7ee_1px,transparent_1px)] bg-size-[100%_32px]"
         onPointerDown={start}
         onPointerMove={move}
         onPointerUp={end}
@@ -427,11 +453,11 @@ function NotebookEditor({
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="notebook-content">Typed notes</Label>
+              <Label htmlFor="notebook-content">Text notes</Label>
               <textarea
                 id="notebook-content"
                 className="border-input min-h-48 w-full rounded-md border bg-transparent px-3 py-2 text-sm"
-                placeholder="Write whatever is useful today..."
+                placeholder="What is on your mind today, or what would you like to remember?"
                 value={values.content}
                 onChange={(event) =>
                   setValues((current) => ({

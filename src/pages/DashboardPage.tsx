@@ -358,7 +358,13 @@ export default function DashboardPage() {
                       key={item.id}
                       className="flex items-start gap-3 py-4 first:pt-0"
                     >
-                      <span className="bg-primary/10 text-primary mt-0.5 rounded-lg p-2">
+                      <span
+                        className={`mt-0.5 rounded-lg p-2 ${
+                          item.kind === 'schedule'
+                            ? 'bg-primary/10 text-primary'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}
+                      >
                         {item.kind === 'schedule' ? (
                           <CalendarDays aria-hidden="true" className="size-4" />
                         ) : (
@@ -387,8 +393,11 @@ export default function DashboardPage() {
                         )}
                       </div>
                       <Badge
-                        variant={
-                          item.kind === 'schedule' ? 'default' : 'secondary'
+                        variant="default"
+                        className={
+                          item.kind === 'schedule'
+                            ? undefined
+                            : 'bg-yellow-100 text-yellow-800'
                         }
                       >
                         {item.kind === 'schedule' ? 'Scheduled' : 'Reminder'}
@@ -418,15 +427,10 @@ export default function DashboardPage() {
             <CardContent className="p-5">
               <h2 className="mb-3 text-lg font-semibold">Capture a moment</h2>
               <p className="text-muted-foreground mb-4 text-sm">
-                Add a reminder or keep a notebook page whenever it feels useful.
+                Keep a notebook page whenever it feels useful.
               </p>
               <div className="grid gap-2">
                 {[
-                  {
-                    to: '/calendar',
-                    label: 'Add a reminder or schedule item',
-                    icon: CalendarDays,
-                  },
                   {
                     to: `/notebook/new?date=${today}`,
                     label: 'Open notebook',
