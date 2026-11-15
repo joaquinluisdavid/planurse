@@ -27,21 +27,21 @@
 }
 
 :root {
-  --background: #edf5f8;
-  --foreground: #183746;
+  --background: #f8fafc;
+  --foreground: #1e293b;
   --primary: #0e7490;
-  --secondary: #d8edf2;
-  --secondary-foreground: #155e75;
-  --accent: #f8d7c8;
-  --accent-foreground: #8a4332;
-  --border: #c5dce3;
-  --input: #a9c7d1;
-  --card: #fdfefe;
-  --popover: #fdfefe;
-  --muted: #e4eef1;
-  --muted-foreground: #55707b;
-  --sidebar: #d9eaf0;
-  --header: rgba(253, 254, 254, 0.82);
+  --secondary: #eff6ff;
+  --secondary-foreground: #1e4fa8;
+  --accent: #fff7ed;
+  --accent-foreground: #9a4d11;
+  --border: #d9e2ef;
+  --input: #b9c9dc;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --sidebar: #eef4fb;
+  --header: rgba(255, 255, 255, 0.88);
   --radius: 0.75rem;
   font-family: 'Segoe UI', ui-sans-serif, system-ui, sans-serif;
   font-synthesis: none;

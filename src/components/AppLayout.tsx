@@ -75,7 +75,7 @@ function ThemeSync() {
   const { user } = useAuth()
   useEffect(() => {
     const settings = data?.dashboardSettings[0]
-    const theme = settings?.theme ?? 'ocean'
+    const theme = settings?.theme ?? 'light'
     const savedPrimary =
       (user ? localStorage.getItem(`planurse-accent-${user.id}`) : null) ||
       settings?.customPrimary ||

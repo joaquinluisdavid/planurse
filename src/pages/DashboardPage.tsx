@@ -103,7 +103,7 @@ export default function DashboardPage() {
             id: user?.id ?? '',
             userId: user?.id ?? '',
             coverImageUrl: nextCoverImageUrl.trim(),
-            theme: settings?.theme ?? 'ocean',
+            theme: settings?.theme ?? 'light',
             customPrimary: settings?.customPrimary ?? '#0e7490',
             updatedAt: new Date().toISOString(),
           },
@@ -198,9 +198,7 @@ export default function DashboardPage() {
                 ? 'repeating-linear-gradient(120deg, #252b31 0, #252b31 24px, #202428 24px, #202428 48px)'
                 : settings?.theme === 'high-contrast'
                   ? 'repeating-linear-gradient(120deg, #ffffff 0, #ffffff 24px, #f0f0f0 24px, #f0f0f0 48px)'
-                  : settings?.theme === 'ocean'
-                    ? 'repeating-linear-gradient(120deg, #d8edf2 0, #d8edf2 24px, #c5dce3 24px, #c5dce3 48px)'
-                    : 'repeating-linear-gradient(120deg, color-mix(in srgb, var(--primary) 8%, var(--background)) 0, color-mix(in srgb, var(--primary) 8%, var(--background)) 24px, color-mix(in srgb, var(--primary) 16%, var(--background)) 24px, color-mix(in srgb, var(--primary) 16%, var(--background)) 48px)',
+                  : 'repeating-linear-gradient(120deg, color-mix(in srgb, var(--primary) 8%, var(--background)) 0, color-mix(in srgb, var(--primary) 8%, var(--background)) 24px, color-mix(in srgb, var(--primary) 16%, var(--background)) 24px, color-mix(in srgb, var(--primary) 16%, var(--background)) 48px)',
           backgroundPosition: 'center',
           backgroundSize: 'cover',
         }}

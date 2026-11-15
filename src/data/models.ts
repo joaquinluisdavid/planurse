@@ -100,7 +100,7 @@ export const dashboardSettingsSchema = z.object({
   id: z.string().min(1),
   ...ownership,
   coverImageUrl: z.string().max(2800000),
-  theme: z.enum(['light', 'dark', 'ocean', 'minimalist', 'high-contrast']).default('ocean'),
+  theme: z.enum(['light', 'dark', 'minimalist', 'high-contrast']).default('light'),
   customPrimary: z
     .string()
     .regex(/^#[0-9a-f]{6}$/i)

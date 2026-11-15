@@ -24,7 +24,7 @@ export default function SettingsPage() {
   const [signOutOpen, setSignOutOpen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [themeError, setThemeError] = useState<string | null>(null)
-  const currentTheme = data?.dashboardSettings[0]?.theme ?? 'ocean'
+  const currentTheme = data?.dashboardSettings[0]?.theme ?? 'light'
   const customPrimary =
     (user ? localStorage.getItem(`planurse-accent-${user.id}`) : null) ??
     data?.dashboardSettings[0]?.customPrimary ??
@@ -56,15 +56,6 @@ export default function SettingsPage() {
       surface: '#202428',
       primary: '#0e7490',
       secondary: '#252b31',
-    },
-    {
-      value: 'ocean',
-      name: 'Ocean',
-      description: 'Teal sea-glass tones with warm contrast.',
-      background: '#edf5f8',
-      surface: '#fdfefe',
-      primary: '#0e7490',
-      secondary: '#d8edf2',
     },
     {
       value: 'minimalist',
