@@ -11,6 +11,10 @@ not verified until the complete schema is applied and the two-user RLS checks
 below pass against your Supabase project.** No Supabase credentials are included
 in this repository.
 
+The public `/demo` route is a read-only product walkthrough with fictional data.
+It does not require an account and does not write to Supabase. Use the normal
+account routes for the real private workspace.
+
 > **Current repository status:** the live Supabase project has the complete
 > application schema, and the eight database changes are now represented in
 > `supabase/migrations/`. The supplied history does not include a separate
@@ -55,6 +59,9 @@ planning or Notebook entries.
 npm ci
 npm run dev
 ```
+
+To preview the public walkthrough locally, open
+`http://localhost:5173/demo` after starting Vite.
 
 Without valid project environment values the app blocks account actions and
 shows setup guidance; it does not fall back to local demo storage. A configured

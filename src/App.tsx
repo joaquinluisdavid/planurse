@@ -7,6 +7,10 @@ import { UpcomingPage } from '@/pages/UpcomingPage'
 import { Toaster } from '@/components/ui/sonner'
 import { WorkspaceProvider } from '@/data/WorkspaceProvider'
 import { AuthProvider } from '@/auth/AuthProvider'
+import { AuthContext, type AuthValue } from '@/auth/useAuth'
+import { createDemoRepository } from '@/demo/repository'
+import type { User } from '@supabase/supabase-js'
+import { useMemo } from 'react'
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
 const ShiftsPage = lazy(() => import('@/pages/ShiftsPage'))
@@ -22,10 +26,10 @@ const LearningNotesPage = lazy(() => import('@/pages/LearningNotesPage'))
 const NotebookPage = lazy(() => import('@/pages/NotebookPage'))
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'))
 
-export function AppRoutes() {
+export function AppRoutes({ demo = false }: { demo?: boolean } = {}) {
   return (
     <Routes>
-      <Route path="/" element={<AccountEntryPage />} />
+      <Route path="/" element={demo ? <Navigate to="/dashboard" replace /> : <AccountEntryPage />} />
       <Route path="/login" element={<AccountEntryPage mode="login" />} />
       <Route path="/signup" element={<AccountEntryPage mode="signup" />} />
       <Route
@@ -84,6 +88,8 @@ export function AppRoutes() {
 }
 
 export default function App() {
+  const demo = window.location.pathname.includes('/demo')
+  if (demo) return <DemoApp />
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
@@ -92,6 +98,41 @@ export default function App() {
           <Toaster richColors position="bottom-right" />
         </WorkspaceProvider>
       </AuthProvider>
+    </BrowserRouter>
+  )
+}
+
+function DemoApp() {
+  const repository = useMemo(() => createDemoRepository(), [])
+  const authValue: AuthValue = {
+    user: { id: '00000000-0000-4000-8000-000000000001', email: 'demo@planurse.example' } as User,
+    profile: {
+      userId: '00000000-0000-4000-8000-000000000001',
+      role: 'student-nurse',
+      firstName: 'Demo',
+      lastName: 'Learner',
+      nickname: 'Demo Learner',
+      position: 'Student Nurse',
+      avatarPath: null,
+      avatarUrl: null,
+    },
+    loading: false,
+    error: null,
+    configured: true,
+    refreshProfile: async () => {},
+    saveProfile: async () => {},
+    uploadAvatar: async () => {},
+    removeAvatar: async () => {},
+    signOut: async () => {},
+  }
+  return (
+    <BrowserRouter basename={`${import.meta.env.BASE_URL}demo`}>
+      <AuthContext.Provider value={authValue}>
+        <WorkspaceProvider repository={repository}>
+          <AppRoutes demo />
+          <Toaster richColors position="bottom-right" />
+        </WorkspaceProvider>
+      </AuthContext.Provider>
     </BrowserRouter>
   )
 }

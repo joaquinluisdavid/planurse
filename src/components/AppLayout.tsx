@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from 'react'
-import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -101,6 +101,8 @@ export function AppLayout() {
   const [signOutError, setSignOutError] = useState<string | null>(null)
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
+  const demoMode = location.pathname.startsWith('/demo')
   const roleLabel =
     profile?.role === 'student-nurse' ? 'Student Nurse' : 'Registered Nurse'
   const displayName =
@@ -244,6 +246,12 @@ export function AppLayout() {
           tabIndex={-1}
           className="mx-auto max-w-7xl p-4 pb-8 outline-none sm:p-8 lg:p-10"
         >
+          {demoMode && (
+            <div className="border-primary/20 bg-primary/5 text-muted-foreground mb-5 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 text-sm">
+              <span><strong className="text-foreground">Demo mode.</strong> Fictional data only. Changes stay in this browser session.</span>
+              <Link className="text-primary font-medium underline" to="/login">Open the real app</Link>
+            </div>
+          )}
           {signOutError && (
             <div className="mb-5">
               <ErrorState message={signOutError} />
