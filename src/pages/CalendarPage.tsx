@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   CalendarDays,
   ChevronLeft,
@@ -356,6 +357,36 @@ export default function CalendarPage() {
                   {formatDate(selectedDate)}
                 </h2>
               </div>
+              <Button className="min-h-11" onClick={() => openNew()}>
+                Add entry
+              </Button>
+            </div>
+            <div className="mb-4 flex flex-wrap gap-2">
+              {(() => {
+                const linkedItem = selectedItems[0]
+                const linkedCase = linkedItem
+                  ? workspace.caseRecords.find(
+                      (entry) => entry.plannerItemId === linkedItem.id,
+                    )
+                  : undefined
+                const query = new URLSearchParams({ date: selectedDate })
+                if (linkedItem) query.set('plannerItemId', linkedItem.id)
+                if (linkedCase) query.set('caseRecordId', linkedCase.id)
+                return (
+                  <>
+                    <Button variant="outline" className="min-h-11" asChild>
+                      <Link to={`/learning-notes/new?${query.toString()}`}>
+                        Add learning note
+                      </Link>
+                    </Button>
+                    <Button variant="outline" className="min-h-11" asChild>
+                      <Link to={`/reflections/new?${query.toString()}`}>
+                        Add reflection
+                      </Link>
+                    </Button>
+                  </>
+                )
+              })()}
             </div>
             {selectedItems.length ? (
               <ul className="space-y-3">
@@ -366,6 +397,12 @@ export default function CalendarPage() {
                     onDragStart={() => setDragged(item.id)}
                     className="rounded-xl border p-4"
                   >
+                    {(() => {
+                      const linkedCase = workspace.caseRecords.find(
+                        (entry) => entry.plannerItemId === item.id,
+                      )
+                      return (
+                        <>
                     <div className="flex items-start gap-3">
                       <span
                         className={`mt-0.5 rounded-lg p-2 ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-secondary text-secondary-foreground'}`}
@@ -447,6 +484,21 @@ export default function CalendarPage() {
                         Delete
                       </Button>
                     </div>
+                    {linkedCase && (
+                      <div className="mt-3 border-t pt-3 text-sm">
+                        <p className="font-medium">
+                          Case handled: {linkedCase.category.replaceAll('-', ' ')}
+                        </p>
+                        {linkedCase.learningTakeaway && (
+                          <p className="text-muted-foreground mt-1">
+                            {linkedCase.learningTakeaway}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                        </>
+                      )
+                    })()}
                   </li>
                 ))}
               </ul>
@@ -664,7 +716,7 @@ export default function CalendarPage() {
               {values.caseCategory && (
                 <div className="space-y-2">
                   <Label htmlFor="calendar-case-takeaway">
-                    General learning takeaway
+                    General learning takeaway (optional)
                   </Label>
                   <textarea
                     id="calendar-case-takeaway"

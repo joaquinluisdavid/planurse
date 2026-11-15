@@ -151,6 +151,7 @@ export function AppLayout() {
           </div>
           <NavLink
             to="/profile"
+            aria-label="Open My Profile"
             className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium"
           >
             <UserRound aria-hidden="true" className="size-5" />
@@ -211,6 +212,7 @@ export function AppLayout() {
                   <NavLink
                     to="/profile"
                     onClick={() => setOpen(false)}
+                    aria-label="Open My Profile"
                     className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium"
                   >
                     <UserRound aria-hidden="true" className="size-5" />
