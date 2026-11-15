@@ -7,9 +7,15 @@ medical record. Do not enter patient-identifying information.**
 Planurse now has real Supabase sign-up/sign-in, password recovery, account
 onboarding, and user-scoped cloud repositories. It no longer offers the local
 fictional workspace as an application mode. **Production account isolation is
-not verified until the migration is applied and the two-user RLS checks below
-pass against your Supabase project.** No Supabase credentials are included in
-this repository.
+not verified until the complete schema is applied and the two-user RLS checks
+below pass against your Supabase project.** No Supabase credentials are included
+in this repository.
+
+> **Current repository status:** the live Supabase project has the complete
+> application schema, and the eight database changes are now represented in
+> `supabase/migrations/`. The supplied history does not include a separate
+> `case_records` migration; add or verify that schema before using the
+> cases-handled workflow against a fresh project.
 
 ## Configure a Supabase project
 
@@ -18,11 +24,13 @@ this repository.
 2. Copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and
    `VITE_SUPABASE_PUBLISHABLE_KEY`. Never use a `service_role` key in a Vite
    variable or browser bundle. `.env` is ignored by Git.
-3. In the Supabase SQL editor, apply all four migrations in order:
-   `supabase/migrations/20261109000000_initial_private_workspace.sql`, then
-   `supabase/migrations/20261110000000_calendar_planning.sql`, then
-   `supabase/migrations/20261111000000_cases_handled.sql`, then
-   `supabase/migrations/20261112000000_profile_details.sql`.
+3. For the existing Planurse Supabase project, confirm these eight database
+   changes are applied in dependency order: Initial private workspace, Calendar
+   planning, Profile details, Notebook entries, Dashboard customization,
+   Bulletin images, Dashboard image data, and Dashboard themes. For a fresh
+   project, apply the checked-in
+   `supabase/migrations/20261109000000_initial_private_workspace.sql` first,
+   then apply the seven later migration files in timestamp order.
 4. In Supabase Auth URL configuration, set the local site URL to
    `http://localhost:5173` and allow `http://localhost:5173/` and
    `http://localhost:5173/update-password` as redirect URLs. For GitHub Pages,
@@ -37,9 +45,11 @@ this repository.
    accounts. Use fictional/non-identifying work content only.
 
 If sign-in returns PostgREST error `PGRST205` for `public.profiles`, the schema
-is missing or its API cache is stale: apply all four migrations in order in the SQL
-Editor, wait for them to finish, then reload the app. The initial migration
-requests a PostgREST schema-cache refresh at the end.
+is missing or its API cache is stale: confirm the Initial private workspace
+change is applied, wait for it to finish, then reload the app. The initial
+migration requests a PostgREST schema-cache refresh at the end. Other
+`PGRST205` errors identify a missing later schema change, such as Calendar
+planning or Notebook entries.
 
 ```sh
 npm ci
@@ -48,7 +58,8 @@ npm run dev
 
 Without valid project environment values the app blocks account actions and
 shows setup guidance; it does not fall back to local demo storage. A configured
-project also needs the migration before profiles and workspace queries work.
+project also needs the complete schema before all profiles and workspace queries
+work.
 
 ## Features
 
@@ -85,25 +96,19 @@ reflections must remain general and non-identifying; they are not clinical
 documentation. Follow employer policy and approved clinical supervision/
 references.
 
-## Calendar and cases-handled migrations
+## Data model status
 
-The calendar migration adds account-owned calendar entries, permits date-only
-reflections/learning notes, links them optionally to calendar items, and
-normalizes old sample-prefixed room labels. The cases-handled migration stores
-only a fixed broad category, date, optional calendar link, and optional general
-learning takeaway. It deliberately has no patient name, patient ID, room, case
-narrative, diagnosis, or clinical documentation fields. Notes/reflections may
-link to the case entry, with same-owner and same-date checks.
-The profile-details migration extends existing profiles, maps legacy roles to
-Registered Nurse/Student Nurse, and creates a private avatar bucket with owner-
-scoped Storage policies. Profile pictures must be JPG, PNG, or WebP and no larger
-than 2 MB. Avatars are displayed using short-lived signed URLs.
-The legacy handoff table/data are retained in the database for now, but are no
-longer queried or exposed by the app. No destructive data drop is performed.
+The live schema retains the original shift/task model and adds account-owned
+planner items, date-linked learning records, notebook entries, dashboard
+settings, bulletin posts, profile details, and private avatar storage. The
+calendar and notebook changes preserve existing shift history while allowing
+date-first planning. Dashboard image data is bounded to private data URLs, and
+dashboard themes validate supported theme names and six-digit hex colors. No
+destructive data drop is performed.
 
 ## Required security verification before production
 
-The migration defines owner-scoped SELECT/INSERT/UPDATE/DELETE policies and
+The live schema defines owner-scoped SELECT/INSERT/UPDATE/DELETE policies and
 composite foreign keys. These are implementation claims, not a result of a live
 security audit. Verify with two distinct confirmed users and the publishable key
 (the service-role key bypasses RLS):
@@ -158,9 +163,11 @@ React Router URLs, and deploys `dist` to Pages.
    `https://joaquinluisdavid.github.io/planurse/` and add that URL plus
    `https://joaquinluisdavid.github.io/planurse/update-password` to the allowed
    redirect URLs. Keep the local development URLs too if needed.
-5. Apply all four database migrations in order and verify two-user RLS
-   isolation before using account data. Direct nested routes use the workflow's `404.html` SPA
-   fallback. The `public/_redirects` file is for Netlify, not GitHub Pages.
+5. Confirm all eight database migrations are applied and verify two-user RLS
+   isolation before using account data. Also verify the cases-handled schema,
+   since it was not included in the supplied migration history. Direct nested routes use the
+   workflow's `404.html` SPA fallback. The `public/_redirects` file is for
+   Netlify, not GitHub Pages.
 
 Do not market the service as HIPAA compliant or use it for patient records
 based solely on these technical controls.
