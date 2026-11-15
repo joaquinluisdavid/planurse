@@ -70,7 +70,7 @@ function ReflectionForm({
   }
   return (
     <form className="max-w-3xl space-y-5" onSubmit={submit} noValidate>
-      <div className="space-y-2 rounded-xl border bg-white p-5">
+      <div className="bg-card space-y-2 rounded-xl border p-5">
         <Label htmlFor="reflection-date">Date</Label>
         <input
           id="reflection-date"
@@ -168,7 +168,7 @@ function ReflectionForm({
           'Write a question to discuss with a preceptor or approved learning resource.',
         ],
       ].map(([key, label, hint]) => (
-        <div key={key} className="space-y-2 rounded-xl border bg-white p-5">
+        <div key={key} className="bg-card space-y-2 rounded-xl border p-5">
           <Label htmlFor={`reflection-${key}`}>{label}</Label>
           <textarea
             id={`reflection-${key}`}
@@ -193,7 +193,7 @@ function ReflectionForm({
             id={`reflection-${key}-hint`}
             className="text-muted-foreground text-xs"
           >
-            {hint} Do not include patient-identifying information.
+            {hint}
           </p>
           {errors[key] && (
             <p
@@ -205,7 +205,7 @@ function ReflectionForm({
           )}
         </div>
       ))}
-      <div className="space-y-2 rounded-xl border bg-white p-5">
+      <div className="bg-card space-y-2 rounded-xl border p-5">
         <Label htmlFor="reflection-confidence">
           How confident did you feel?
         </Label>

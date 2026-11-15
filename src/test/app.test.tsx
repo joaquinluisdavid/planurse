@@ -625,13 +625,16 @@ describe('loading, error and empty states', () => {
         tasks: [],
         reflections: [],
         learningNotes: [],
+        notebookEntries: [],
+        dashboardSettings: [],
+        bulletinPosts: [],
         plannerItems: [],
         caseRecords: [],
       }),
     )
     expect(await screen.findByText('Your calendar is open')).toBeInTheDocument()
     expect(
-      screen.getByText('Your reflections will appear here.'),
+      screen.getByText('Your journal entries will appear here.'),
     ).toBeInTheDocument()
     await user.click(screen.getByRole('link', { name: 'Add calendar entry' }))
     expect(await screen.findByText('Nothing on this day')).toBeInTheDocument()

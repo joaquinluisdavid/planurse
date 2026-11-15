@@ -471,7 +471,9 @@ export function AccountEntryPage({
           )}
         </CardContent>
       </Card>
-      <SafetyNotice />
+      <footer className="mt-2">
+        <SafetyNotice />
+      </footer>
     </main>
   )
 }

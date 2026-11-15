@@ -126,6 +126,9 @@ export function createWorkspaceFixture(now = new Date()): Workspace {
         updatedAt: iso(-1420),
       },
     ],
+    notebookEntries: [],
+    dashboardSettings: [],
+    bulletinPosts: [],
     plannerItems: [
       {
         id: 'calendar-entry-test',

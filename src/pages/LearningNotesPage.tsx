@@ -95,7 +95,7 @@ function LearningNoteForm({
         description="Keep a general topic, question, or reminder to discuss with your preceptor."
       />
       <form className="max-w-3xl space-y-5" onSubmit={submit} noValidate>
-        <div className="space-y-2 rounded-xl border bg-white p-5">
+        <div className="bg-card space-y-2 rounded-xl border p-5">
           <Label htmlFor="learning-date">Date</Label>
           <input
             id="learning-date"
@@ -193,7 +193,7 @@ function LearningNoteForm({
             'Optional next step or check-in reminder.',
           ],
         ].map(([key, label, hint]) => (
-          <div key={key} className="space-y-2 rounded-xl border bg-white p-5">
+          <div key={key} className="bg-card space-y-2 rounded-xl border p-5">
             <Label htmlFor={`learning-${key}`}>
               {label}
               {key !== 'topic' && (
@@ -236,8 +236,8 @@ function LearningNoteForm({
           </div>
         ))}
         <p className="text-muted-foreground text-sm">
-          Learning notes are saved to your account. Do not enter
-          patient-identifying information. No clinical answers are generated.
+          Learning notes are saved to your account. No clinical answers are
+          generated.
         </p>
         {saveError && <ErrorState message={saveError} />}
         <div className="flex justify-end gap-3">
@@ -324,10 +324,6 @@ export default function LearningNotesPage() {
           </Button>
         }
       />
-      <p className="text-muted-foreground mb-5 max-w-3xl text-sm">
-        Do not include patient-identifying information. Notes are account-linked
-        but are not clinical records.
-      </p>
       {actionError && (
         <div className="mb-5">
           <ErrorState message={actionError} />

@@ -1,15 +1,12 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock3,
-  BriefcaseBusiness,
   GripVertical,
   ListTodo,
   Pencil,
-  Plus,
   Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -124,16 +121,6 @@ export default function CalendarPage() {
         (a.startTime ?? '').localeCompare(b.startTime ?? '') ||
         a.title.localeCompare(b.title),
     )
-  const selectedReflections = data.reflections.filter(
-    (entry) => entry.entryDate === selectedDate,
-  )
-  const selectedNotes = data.learningNotes.filter(
-    (entry) => entry.entryDate === selectedDate,
-  )
-  const selectedCases = data.caseRecords.filter(
-    (entry) => entry.entryDate === selectedDate,
-  )
-
   function openNew(date = selectedDate) {
     setValues({ ...blankEntry, date })
     setErrors({})
@@ -207,13 +194,7 @@ export default function CalendarPage() {
       <PageHeader
         eyebrow="Plan ahead · Capture when convenient"
         title="Calendar & reminders"
-        description="Add a schedule item or reminder whenever it suits you. Keep personal notes and reflections attached to a date or calendar item."
-        action={
-          <Button className="h-11" onClick={() => openNew()}>
-            <Plus aria-hidden="true" />
-            Add entry
-          </Button>
-        }
+        description="Add a schedule item or reminder whenever it suits you."
       />
       {actionError && (
         <div className="mb-5">
@@ -284,13 +265,6 @@ export default function CalendarPage() {
               {cells.map((date) => {
                 const key = localDate(date)
                 const dayItems = items.filter((item) => item.date === key)
-                const recordCount =
-                  data.learningNotes.filter((entry) => entry.entryDate === key)
-                    .length +
-                  data.reflections.filter((entry) => entry.entryDate === key)
-                    .length +
-                  data.caseRecords.filter((entry) => entry.entryDate === key)
-                    .length
                 const inMonth = date.getMonth() === visibleMonth.getMonth()
                 return (
                   <div
@@ -298,22 +272,29 @@ export default function CalendarPage() {
                     role="gridcell"
                     aria-label={`Calendar day ${formatDate(key)}`}
                     aria-selected={selectedDate === key}
+                    onClick={(event) => {
+                      if ((event.target as HTMLElement).closest('button')) return
+                      setSelectedDate(key)
+                      if (!inMonth) setVisibleMonth(monthStart(date))
+                      openNew(key)
+                    }}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => {
                       event.preventDefault()
                       if (dragged) void moveItem(dragged, key)
                       setDragged(null)
                     }}
-                    className={`min-h-24 border-r border-b p-1 transition-colors sm:min-h-28 sm:p-2 ${inMonth ? 'bg-white' : 'bg-muted/40'} ${selectedDate === key ? 'ring-primary relative z-10 ring-2 ring-inset' : ''}`}
+                    className={`min-h-24 cursor-pointer border-r border-b p-1 transition-colors sm:min-h-28 sm:p-2 ${inMonth ? 'bg-background' : 'bg-muted/40'} ${selectedDate === key ? 'ring-primary relative z-10 ring-2 ring-inset' : ''}`}
                   >
                     <button
                       type="button"
                       className={`flex size-8 items-center justify-center rounded-full text-sm ${key === today ? 'bg-primary text-primary-foreground font-semibold' : ''} ${!inMonth ? 'text-muted-foreground' : ''}`}
-                      aria-label={`Select ${formatDate(key)}`}
+                      aria-label={`Add entry for ${formatDate(key)}`}
                       aria-pressed={selectedDate === key}
                       onClick={() => {
                         setSelectedDate(key)
                         if (!inMonth) setVisibleMonth(monthStart(date))
+                        openNew(key)
                       }}
                     >
                       {date.getDate()}
@@ -357,11 +338,6 @@ export default function CalendarPage() {
                           +{dayItems.length - 3} more
                         </button>
                       )}
-                      {recordCount > 0 && (
-                        <p className="text-muted-foreground px-1 text-[9px] sm:text-[10px]">
-                          {recordCount} note/reflection
-                        </p>
-                      )}
                     </div>
                   </div>
                 )
@@ -380,14 +356,6 @@ export default function CalendarPage() {
                   {formatDate(selectedDate)}
                 </h2>
               </div>
-              <Button
-                variant="outline"
-                className="h-11"
-                onClick={() => openNew(selectedDate)}
-              >
-                <Plus aria-hidden="true" />
-                Add
-              </Button>
             </div>
             {selectedItems.length ? (
               <ul className="space-y-3">
@@ -478,18 +446,6 @@ export default function CalendarPage() {
                         <Trash2 aria-hidden="true" />
                         Delete
                       </Button>
-                      <Link
-                        to={`/learning-notes/new?date=${item.date}&plannerItemId=${item.id}`}
-                        className="text-primary inline-flex min-h-11 items-center rounded-md px-3 text-sm underline"
-                      >
-                        Add learning note
-                      </Link>
-                      <Link
-                        to={`/reflections/new?date=${item.date}&plannerItemId=${item.id}`}
-                        className="text-primary inline-flex min-h-11 items-center rounded-md px-3 text-sm underline"
-                      >
-                        Add reflection
-                      </Link>
                     </div>
                   </li>
                 ))}
@@ -497,155 +453,9 @@ export default function CalendarPage() {
             ) : (
               <EmptyState
                 title="Nothing on this day"
-                description="Add a schedule item or a simple reminder."
-                action={
-                  <Button
-                    className="h-11"
-                    onClick={() => openNew(selectedDate)}
-                  >
-                    <Plus aria-hidden="true" />
-                    Add entry
-                  </Button>
-                }
+                description="Choose a day in the calendar to add a schedule item or reminder."
               />
             )}
-            <section
-              aria-labelledby="calendar-notes-heading"
-              className="mt-6 border-t pt-5"
-            >
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <h3 id="calendar-notes-heading" className="font-semibold">
-                  Learning notes
-                </h3>
-                <Link
-                  to={`/learning-notes/new?date=${selectedDate}`}
-                  className="text-primary text-sm underline"
-                >
-                  Add note
-                </Link>
-              </div>
-              {selectedNotes.length ? (
-                <ul className="space-y-2">
-                  {selectedNotes.map((note) => (
-                    <li
-                      key={note.id}
-                      className="bg-secondary/60 rounded-lg p-3"
-                    >
-                      <Link
-                        to={`/learning-notes/${note.id}/edit`}
-                        className="font-medium hover:underline"
-                      >
-                        {note.topic}
-                      </Link>
-                      {note.question && (
-                        <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
-                          {note.question}
-                        </p>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  No learning notes for this date.
-                </p>
-              )}
-              <div className="mt-5 mb-3 flex items-center justify-between gap-3">
-                <h3 className="font-semibold">Reflections</h3>
-                <Link
-                  to={`/reflections/new?date=${selectedDate}`}
-                  className="text-primary text-sm underline"
-                >
-                  Add reflection
-                </Link>
-              </div>
-              {selectedReflections.length ? (
-                <ul className="space-y-2">
-                  {selectedReflections.map((reflection) => (
-                    <li
-                      key={reflection.id}
-                      className="bg-secondary/60 rounded-lg p-3"
-                    >
-                      <Link
-                        to={`/reflections/${reflection.id}/edit`}
-                        className="font-medium hover:underline"
-                      >
-                        Personal reflection · Confidence {reflection.confidence}
-                        /5
-                      </Link>
-                      <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">
-                        {reflection.wentWell}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="text-muted-foreground text-sm">
-                  No reflections for this date.
-                </p>
-              )}
-              <div className="mt-5 border-t pt-4">
-                <div className="mb-3 flex items-center justify-between gap-3">
-                  <h3 className="flex items-center gap-2 font-semibold">
-                    <BriefcaseBusiness
-                      aria-hidden="true"
-                      className="text-primary size-4"
-                    />
-                    Cases handled
-                  </h3>
-                  <span className="text-muted-foreground text-xs">
-                    Add while creating an entry
-                  </span>
-                </div>
-                <p className="text-muted-foreground mb-3 text-xs">
-                  Broad categories only; no patient or case-identifying details.
-                </p>
-                {selectedCases.length ? (
-                  <ul className="space-y-2">
-                    {selectedCases.map((caseRecord) => (
-                      <li
-                        key={caseRecord.id}
-                        className="bg-secondary/60 rounded-lg p-3"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="font-medium">
-                              {caseCategories.find(
-                                (category) =>
-                                  category.value === caseRecord.category,
-                              )?.label ?? 'Learning experience'}
-                            </p>
-                            {caseRecord.learningTakeaway && (
-                              <p className="text-muted-foreground mt-1 text-sm">
-                                {caseRecord.learningTakeaway}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-2 flex flex-wrap gap-3">
-                          <Link
-                            to={`/learning-notes/new?date=${caseRecord.entryDate}&caseRecordId=${caseRecord.id}`}
-                            className="text-primary inline-flex min-h-11 items-center text-sm underline"
-                          >
-                            Add learning note
-                          </Link>
-                          <Link
-                            to={`/reflections/new?date=${caseRecord.entryDate}&caseRecordId=${caseRecord.id}`}
-                            className="text-primary inline-flex min-h-11 items-center text-sm underline"
-                          >
-                            Add reflection
-                          </Link>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-muted-foreground text-sm">
-                    No cases logged for this date.
-                  </p>
-                )}
-              </div>
-            </section>
           </CardContent>
         </Card>
       </div>
@@ -744,7 +554,7 @@ export default function CalendarPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="calendar-start">
-                  Start time {values.kind === 'reminder' && '(optional)'}
+                  Start time
                 </Label>
                 <Input
                   id="calendar-start"
@@ -773,7 +583,7 @@ export default function CalendarPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="calendar-end">
-                  End time (optional)
+                  End time
                 </Label>
                 <Input
                   id="calendar-end"
@@ -819,10 +629,9 @@ export default function CalendarPage() {
             </div>
             <div className="border-primary/20 bg-primary/5 space-y-4 rounded-lg border p-4">
               <div>
-                <h3 className="font-semibold">Case handled (optional)</h3>
+                <h3 className="font-semibold">Case handled</h3>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Add a broad work category while creating this entry. No
-                  patient or case-identifying details.
+                  Add a broad work category while creating this entry.
                 </p>
               </div>
               <div className="space-y-2">
@@ -855,7 +664,7 @@ export default function CalendarPage() {
               {values.caseCategory && (
                 <div className="space-y-2">
                   <Label htmlFor="calendar-case-takeaway">
-                    General learning takeaway (optional)
+                    General learning takeaway
                   </Label>
                   <textarea
                     id="calendar-case-takeaway"
@@ -873,10 +682,6 @@ export default function CalendarPage() {
                 </div>
               )}
             </div>
-            <p className="text-muted-foreground text-xs">
-              Use general, non-identifying reminders only. Do not put patient
-              names, diagnoses, or record details in calendar entries.
-            </p>
             {saveError && <ErrorState message={saveError} />}
             <div className="flex justify-end gap-3">
               <Button

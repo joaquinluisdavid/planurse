@@ -25,6 +25,63 @@ export const learningNoteFormSchema = z.object({
 export type ReflectionFormValues = z.infer<typeof reflectionFormSchema>
 export type LearningNoteFormValues = z.infer<typeof learningNoteFormSchema>
 
+export const notebookEntryFormSchema = z.object({
+  plannerItemId: z.string(),
+  entryDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Choose a date.'),
+  title: z.string().trim().min(1, 'Add a page title.').max(120),
+  content: z.string().max(10000),
+  drawingData: z.string().max(2500000).nullable(),
+})
+
+export type NotebookEntryFormValues = z.infer<typeof notebookEntryFormSchema>
+
+export function saveNotebookEntry(
+  workspace: Workspace,
+  values: NotebookEntryFormValues,
+  userId: string,
+  id: string,
+  editing: boolean,
+  now = new Date(),
+): Workspace {
+  const valid = notebookEntryFormSchema.parse(values)
+  if (
+    valid.plannerItemId &&
+    !workspace.plannerItems.some(
+      (item) => item.id === valid.plannerItemId && item.userId === userId,
+    )
+  )
+    throw new Error('This calendar entry no longer exists. Refresh and retry.')
+  const existing = workspace.notebookEntries.find((item) => item.id === id)
+  if (editing && (!existing || existing.userId !== userId))
+    throw new Error('This notebook page no longer exists. Refresh and retry.')
+  if (!editing && workspace.notebookEntries.some((item) => item.id === id))
+    throw new Error('Notebook page identifier already exists. Please try again.')
+  const entry = {
+    id,
+    userId,
+    ...valid,
+    plannerItemId: valid.plannerItemId || null,
+    drawingData: valid.drawingData || null,
+    createdAt: existing?.createdAt ?? now.toISOString(),
+    updatedAt: now.toISOString(),
+  }
+  return {
+    ...workspace,
+    notebookEntries: editing
+      ? workspace.notebookEntries.map((item) => (item.id === id ? entry : item))
+      : [...workspace.notebookEntries, entry],
+  }
+}
+
+export function deleteNotebookEntry(workspace: Workspace, id: string): Workspace {
+  if (!workspace.notebookEntries.some((item) => item.id === id))
+    throw new Error('This notebook page no longer exists. Refresh and retry.')
+  return {
+    ...workspace,
+    notebookEntries: workspace.notebookEntries.filter((item) => item.id !== id),
+  }
+}
+
 function requireShift(workspace: Workspace, id: string) {
   const shift = workspace.shifts.find((item) => item.id === id)
   if (!shift) throw new Error('This shift no longer exists. Refresh and retry.')

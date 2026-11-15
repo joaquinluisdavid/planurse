@@ -146,7 +146,7 @@ function ShiftPage() {
           )
         }
       />
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-white p-4">
+      <div className="bg-card mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary">
             {readOnly ? 'Shift ended · Read-only' : 'In progress'}
@@ -179,28 +179,20 @@ function ShiftPage() {
             Your shift is saved in history.
           </p>
           <p className="text-muted-foreground mt-1 text-sm">
-            Unfinished tasks remain unfinished. Use a short reflection to note
-            learning goals and questions for a future check-in.
+            Unfinished tasks remain unfinished. Use the notebook to
+            capture goals and questions for a future check-in.
           </p>
-          <div className="flex flex-wrap gap-4">
-            <Link
-              to={`/reflections/new?shiftId=${encodeURIComponent(shift.id)}&date=${encodeURIComponent(shift.date)}`}
-              className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
-            >
-              Write a reflection
-            </Link>
-            <Link
-              to={`/learning-notes/new?shiftId=${encodeURIComponent(shift.id)}&date=${encodeURIComponent(shift.date)}`}
-              className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
-            >
-              Add a learning note
-            </Link>
-          </div>
+          <Link
+            to={`/notebook/new?date=${encodeURIComponent(shift.date)}`}
+            className="text-primary mt-2 inline-flex min-h-11 items-center text-sm font-medium underline underline-offset-4"
+          >
+            Open notebook
+          </Link>
         </div>
       )}
       <section
         aria-label="Room shorthand"
-        className="mb-6 rounded-xl border bg-white p-4"
+        className="bg-card mb-6 rounded-xl border p-4"
       >
         <h2 className="mb-3 text-sm font-semibold">Room shorthand</h2>
         <div className="flex flex-wrap gap-2">
@@ -263,8 +255,7 @@ function ShiftPage() {
               Add room
             </Button>
             <p id="room-help" className="text-muted-foreground w-full text-xs">
-              Saved as “Room CODE.” Letters, numbers, and hyphens only. Never
-              use patient names or identifying information.
+              Saved as “Room CODE.” Letters, numbers, and hyphens only.
             </p>
             {roomError && (
               <p

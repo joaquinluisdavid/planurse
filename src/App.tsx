@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { AppLayout } from '@/components/AppLayout'
 import { AccountEntryPage } from '@/pages/DemoEntryPage'
@@ -19,6 +19,7 @@ const ReflectionSamplesPage = lazy(
 )
 const ReflectionEditorPage = lazy(() => import('@/pages/ReflectionEditorPage'))
 const LearningNotesPage = lazy(() => import('@/pages/LearningNotesPage'))
+const NotebookPage = lazy(() => import('@/pages/NotebookPage'))
 const CalendarPage = lazy(() => import('@/pages/CalendarPage'))
 
 export function AppRoutes() {
@@ -45,6 +46,11 @@ export function AppRoutes() {
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/journal" element={<Navigate to="/notebook" replace />} />
+          <Route path="/journal/new" element={<Navigate to="/notebook/new" replace />} />
+          <Route path="/notebook" element={<NotebookPage />} />
+          <Route path="/notebook/new" element={<NotebookPage />} />
+          <Route path="/notebook/:entryId/edit" element={<NotebookPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/shifts" element={<ShiftsPage />} />
           <Route path="/shifts/new" element={<NewShiftPage />} />

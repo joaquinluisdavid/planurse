@@ -84,6 +84,39 @@ export const learningNoteSchema = z.object({
   createdAt: timestamp,
   updatedAt: timestamp,
 })
+export const notebookEntrySchema = z.object({
+  id: z.string().min(1),
+  ...ownership,
+  plannerItemId: z.string().nullable().default(null),
+  entryDate: calendarDate,
+  title: z.string().trim().min(1).max(120),
+  content: z.string().max(10000),
+  drawingData: z.string().max(2500000).nullable().default(null),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+})
+export type NotebookEntry = z.infer<typeof notebookEntrySchema>
+export const dashboardSettingsSchema = z.object({
+  id: z.string().min(1),
+  ...ownership,
+  coverImageUrl: z.string().max(2800000),
+  theme: z.enum(['light', 'dark', 'ocean', 'minimalist', 'high-contrast']).default('ocean'),
+  customPrimary: z
+    .string()
+    .regex(/^#[0-9a-f]{6}$/i)
+    .default('#0e7490'),
+  updatedAt: timestamp,
+})
+export const bulletinPostSchema = z.object({
+  id: z.string().min(1),
+  ...ownership,
+  title: z.string().trim().min(1).max(80),
+  content: z.string().trim().min(1).max(500),
+  imageUrl: z.string().max(2800000),
+  color: z.enum(['yellow', 'blue', 'pink', 'green']),
+  createdAt: timestamp,
+  updatedAt: timestamp,
+})
 export const caseRecordSchema = z.object({
   id: z.string().min(1),
   ...ownership,
@@ -102,6 +135,9 @@ export const workspaceSchema = z
     tasks: z.array(taskSchema),
     reflections: z.array(reflectionSchema),
     learningNotes: z.array(learningNoteSchema).default([]),
+    notebookEntries: z.array(notebookEntrySchema).default([]),
+    dashboardSettings: z.array(dashboardSettingsSchema).default([]),
+    bulletinPosts: z.array(bulletinPostSchema).default([]),
     plannerItems: z.array(plannerItemSchema).default([]),
     caseRecords: z.array(caseRecordSchema).default([]),
   })
@@ -116,6 +152,9 @@ export const workspaceSchema = z
       value.tasks,
       value.reflections,
       value.learningNotes,
+      value.notebookEntries,
+      value.dashboardSettings,
+      value.bulletinPosts,
       value.plannerItems,
       value.caseRecords,
     ]) {
@@ -232,3 +271,5 @@ export type LearningNote = z.infer<typeof learningNoteSchema>
 export type PlannerItem = z.infer<typeof plannerItemSchema>
 export type CaseRecord = z.infer<typeof caseRecordSchema>
 export type Workspace = z.infer<typeof workspaceSchema>
+export type DashboardSettings = z.infer<typeof dashboardSettingsSchema>
+export type BulletinPost = z.infer<typeof bulletinPostSchema>

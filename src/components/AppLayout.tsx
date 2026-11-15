@@ -1,11 +1,10 @@
-import { Suspense, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard,
   CalendarDays,
   UserRound,
   NotebookPen,
-  BookOpen,
   Settings,
   Menu,
   LogOut,
@@ -19,6 +18,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetDescription,
+  SheetFooter,
   SheetTrigger,
 } from '@/components/ui/sheet'
 import { SafetyNotice } from './SafetyNotice'
@@ -26,12 +26,12 @@ import { ErrorState, LoadingState } from './Feedback'
 import { useAuth } from '@/auth/useAuth'
 import { cn } from '@/lib/utils'
 import { errorMessage } from '@/lib/errors'
+import { useWorkspace } from '@/data/useWorkspace'
 
 const navigation = [
   { to: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { to: '/calendar', label: 'Calendar & reminders', icon: CalendarDays },
-  { to: '/reflections', label: 'Reflections', icon: NotebookPen },
-  { to: '/learning-notes', label: 'Learning notes', icon: BookOpen },
+  { to: '/notebook', label: 'Notebook', icon: NotebookPen },
 ]
 
 function Brand() {
@@ -60,7 +60,7 @@ function Navigation({ close }: { close?: () => void }) {
           className={({ isActive }) =>
             cn(
               'text-muted-foreground hover:bg-secondary flex min-h-12 items-center gap-3 rounded-lg px-3 text-sm font-medium transition-colors',
-              isActive && 'bg-secondary text-primary',
+              isActive && 'bg-secondary text-primary shadow-sm',
             )
           }
         >
@@ -70,6 +70,30 @@ function Navigation({ close }: { close?: () => void }) {
       ))}
     </nav>
   )
+}
+
+function ThemeSync() {
+  const { data } = useWorkspace()
+  const { user } = useAuth()
+  useEffect(() => {
+    const settings = data?.dashboardSettings[0]
+    const theme = settings?.theme ?? 'ocean'
+    const savedPrimary =
+      (user ? localStorage.getItem(`planurse-accent-${user.id}`) : null) ||
+      settings?.customPrimary ||
+      ''
+    const primary =
+      theme === 'minimalist' &&
+      ['#2563eb', '#0e7490', '#1f5f87'].includes(savedPrimary.toLowerCase())
+        ? '#4a4a46'
+        : savedPrimary
+    document.documentElement.dataset.theme = theme
+    document.documentElement.style.setProperty('--primary', primary)
+    return () => {
+      document.documentElement.style.removeProperty('--primary')
+    }
+  }, [data?.dashboardSettings, user])
+  return null
 }
 
 export function AppLayout() {
@@ -92,51 +116,22 @@ export function AppLayout() {
   }
   return (
     <div className="min-h-screen">
+      <ThemeSync />
       <a
         href="#main-content"
         className="bg-primary sr-only z-50 rounded p-3 text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3"
       >
         Skip to content
       </a>
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r bg-[#eef5f9] px-5 py-7 lg:flex">
+      <aside className="bg-(--sidebar) fixed inset-y-0 left-0 hidden w-72 flex-col border-r px-4 py-6 lg:flex">
         <Brand />
-        <p className="text-muted-foreground mt-8 mb-3 px-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+        <p className="text-muted-foreground mt-10 mb-3 px-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
           Your workspace
         </p>
         <Navigation />
         <div className="mt-auto">
-          <NavLink
-            to="/profile"
-            className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
-          >
-            <UserRound aria-hidden="true" className="size-5" />
-            My Profile
-          </NavLink>
-          <NavLink
-            to="/settings"
-            className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm"
-          >
-            <Settings aria-hidden="true" className="size-5" />
-            Account settings
-          </NavLink>
-          <Button
-            variant="ghost"
-            className="mt-1 h-11 w-full justify-start"
-            onClick={exitAccount}
-          >
-            <LogOut aria-hidden="true" />
-            Sign out
-          </Button>
-        </div>
-      </aside>
-      <div className="lg:ml-64">
-        <header className="flex min-h-18 items-center justify-between gap-3 border-b bg-white/70 px-4 sm:px-8">
-          <div className="lg:hidden">
-            <Brand />
-          </div>
-          <div className="hidden flex-1 lg:block" aria-hidden="true" />
-          <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-3 lg:flex">
+          <div className="border-border mb-3 border-t pt-4">
+            <div className="flex items-center gap-3 px-3 pb-3">
               {profile?.avatarUrl ? (
                 <img
                   src={profile.avatarUrl}
@@ -148,20 +143,42 @@ export function AppLayout() {
                   {(displayName?.[0] ?? 'A').toUpperCase()}
                 </div>
               )}
-              <div>
-                <Link
-                  to="/profile"
-                  aria-label="Open My Profile"
-                  className="max-w-52 truncate text-sm font-semibold hover:underline focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2"
-                >
-                  {displayName}
-                </Link>
-                <p className="text-muted-foreground text-xs">
-                  {roleLabel}
-                  {profile?.position ? ` · ${profile.position}` : ''}
-                </p>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{displayName}</p>
+                <p className="text-muted-foreground truncate text-xs">{roleLabel}</p>
               </div>
             </div>
+          </div>
+          <NavLink
+            to="/profile"
+            className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium"
+          >
+            <UserRound aria-hidden="true" className="size-5" />
+            My Profile
+          </NavLink>
+          <NavLink
+            to="/settings"
+            className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium"
+          >
+            <Settings aria-hidden="true" className="size-5" />
+            Account settings
+          </NavLink>
+          <Button
+            variant="ghost"
+            className="text-destructive/80 hover:bg-destructive/10 hover:text-destructive mt-1 h-11 w-full justify-start"
+            onClick={exitAccount}
+          >
+            <LogOut aria-hidden="true" />
+            Sign out
+          </Button>
+        </div>
+      </aside>
+      <div className="lg:ml-72">
+        <header className="bg-(--header) flex min-h-18 items-center justify-between gap-3 border-b px-4 sm:px-8 lg:hidden">
+          <div className="lg:hidden">
+            <Brand />
+          </div>
+          <div className="flex items-center gap-3">
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger asChild>
                 <Button
@@ -173,38 +190,49 @@ export function AppLayout() {
                   <Menu aria-hidden="true" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-72 p-5">
-                <SheetHeader className="px-0">
-                  <SheetTitle>Planurse workspace</SheetTitle>
-                  <SheetDescription>
-                    {user?.email} · {roleLabel}
+              <SheetContent side="left" className="w-[min(88vw,22rem)] gap-0 p-0">
+                <SheetHeader className="border-b px-6 pt-7 pb-5 pr-14">
+                  <SheetTitle className="text-left text-lg">Planurse workspace</SheetTitle>
+                  <SheetDescription className="text-left leading-relaxed">
+                    {displayName}
+                    <span className="block">{roleLabel}</span>
                   </SheetDescription>
                 </SheetHeader>
-                <Navigation close={() => setOpen(false)} />
-                <NavLink
-                  to="/profile"
-                  onClick={() => setOpen(false)}
-                  className="flex min-h-12 items-center gap-3 px-3"
-                >
-                  <UserRound aria-hidden="true" className="size-5" />
-                  My Profile
-                </NavLink>
-                <NavLink
-                  to="/settings"
-                  onClick={() => setOpen(false)}
-                  className="flex min-h-12 items-center gap-3 px-3"
-                >
-                  <Settings aria-hidden="true" className="size-5" />
-                  Account settings
-                </NavLink>
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={exitAccount}
-                >
-                  <LogOut aria-hidden="true" />
-                  Sign out
-                </Button>
+                <div className="flex-1 overflow-y-auto px-4 py-5">
+                  <p className="text-muted-foreground mb-2 px-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                    Workspace
+                  </p>
+                  <Navigation close={() => setOpen(false)} />
+                </div>
+                <SheetFooter className="border-t px-4 py-4">
+                  <p className="text-muted-foreground px-3 text-[11px] font-semibold tracking-[0.16em] uppercase">
+                    Account
+                  </p>
+                  <NavLink
+                    to="/profile"
+                    onClick={() => setOpen(false)}
+                    className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium"
+                  >
+                    <UserRound aria-hidden="true" className="size-5" />
+                    My Profile
+                  </NavLink>
+                  <NavLink
+                    to="/settings"
+                    onClick={() => setOpen(false)}
+                    className="hover:bg-secondary flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-medium"
+                  >
+                    <Settings aria-hidden="true" className="size-5" />
+                    Account settings
+                  </NavLink>
+                  <Button
+                    variant="outline"
+                    className="border-destructive/25 text-destructive/80 hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive mt-1 h-11 w-full justify-start"
+                    onClick={exitAccount}
+                  >
+                    <LogOut aria-hidden="true" />
+                    Sign out
+                  </Button>
+                </SheetFooter>
               </SheetContent>
             </Sheet>
           </div>
@@ -222,12 +250,12 @@ export function AppLayout() {
           <Suspense fallback={<LoadingState />}>
             <Outlet />
           </Suspense>
-          <div className="mt-8">
+          <footer className="mt-8">
             <SafetyNotice />
-          </div>
-          <footer className="text-muted-foreground mt-4 flex flex-wrap justify-between gap-2 text-xs">
-            <span>Planurse · Workflow, not clinical guidance.</span>
-            <span>Account-scoped cloud workspace</span>
+            <div className="text-muted-foreground mt-4 flex flex-wrap justify-between gap-2 text-xs">
+              <span>Planurse · Workflow, not clinical guidance.</span>
+              <span>Account-scoped cloud workspace</span>
+            </div>
           </footer>
         </main>
       </div>

@@ -186,10 +186,7 @@ export default function ProfilePage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="profile-nickname">
-                  Nickname{' '}
-                  <span className="text-muted-foreground">
-                    (display name, optional)
-                  </span>
+                  Nickname
                 </Label>
                 <input
                   id="profile-nickname"
@@ -222,10 +219,7 @@ export default function ProfilePage() {
                   </select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="profile-position">
-                    Current position{' '}
-                    <span className="text-muted-foreground">(optional)</span>
-                  </Label>
+                  <Label htmlFor="profile-position">Current position</Label>
                   <input
                     id="profile-position"
                     maxLength={100}

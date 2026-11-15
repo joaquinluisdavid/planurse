@@ -46,7 +46,7 @@ export default function ShiftsPage() {
                 <li key={shift.id}>
                   <Link
                     to={`/shifts/${shift.id}`}
-                    className="hover:border-primary flex items-center gap-4 rounded-xl border bg-white p-5"
+                    className="bg-card hover:border-primary flex items-center gap-4 rounded-xl border p-5"
                   >
                     <span className="bg-secondary text-primary hidden rounded-xl p-3 sm:block">
                       <CalendarDays aria-hidden="true" className="size-6" />

@@ -4,7 +4,7 @@ export function SafetyNotice() {
   return (
     <aside
       aria-label="Privacy and safety"
-      className="text-muted-foreground flex gap-3 rounded-xl border bg-white/60 p-4 text-xs leading-relaxed"
+      className="text-muted-foreground bg-card flex gap-3 rounded-xl border p-4 text-xs leading-relaxed"
     >
       <ShieldCheck
         aria-hidden="true"

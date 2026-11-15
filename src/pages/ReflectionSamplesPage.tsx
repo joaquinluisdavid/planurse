@@ -45,10 +45,6 @@ export default function ReflectionSamplesPage() {
           </Button>
         }
       />
-      <p className="text-muted-foreground mb-5 max-w-3xl text-sm">
-        Do not include patient-identifying information. Reflections are not
-        clinical records or advice.
-      </p>
       {actionError && (
         <div className="mb-5">
           <ErrorState message={actionError} />

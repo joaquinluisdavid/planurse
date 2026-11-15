@@ -34,6 +34,9 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
       tasks,
       reflections,
       learningNotes,
+      notebookEntries,
+      dashboardSettings,
+      bulletinPosts,
       plannerItems,
       caseRecords,
     ] = await Promise.all([
@@ -41,6 +44,9 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
       readTable('tasks'),
       readTable('reflections'),
       readTable('learning_notes'),
+      readTable('notebook_entries'),
+      readTable('dashboard_settings'),
+      readTable('bulletin_posts'),
       readTable('planner_items'),
       readTable('case_records'),
     ])
@@ -89,6 +95,35 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
         topic: row.topic,
         question: row.question,
         followUp: row.follow_up,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
+      notebookEntries: notebookEntries.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        plannerItemId: row.planner_item_id,
+        entryDate: row.entry_date,
+        title: row.title,
+        content: row.content,
+        drawingData: row.drawing_data,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      })),
+      dashboardSettings: dashboardSettings.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        coverImageUrl: row.cover_image_url,
+        theme: row.theme,
+        customPrimary: row.custom_primary,
+        updatedAt: row.updated_at,
+      })),
+      bulletinPosts: bulletinPosts.map((row) => ({
+        id: row.id,
+        userId: row.user_id,
+        title: row.title,
+        content: row.content,
+        imageUrl: row.image_url,
+        color: row.color,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       })),
@@ -143,10 +178,32 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
       }
     }
     if (phase !== 'delete' && changed.length) {
+      const encoded = changed.map((record) => ({
+        ...encode(record),
+        user_id: userId,
+      }))
       const { error } = await client.from(table).upsert(
-        changed.map((record) => ({ ...encode(record), user_id: userId })),
+        encoded,
         { onConflict: 'id' },
       )
+      if (
+        error &&
+        table === 'dashboard_settings' &&
+        'custom_primary' in encoded[0] &&
+        (error.code === 'PGRST204' ||
+          error.message.includes("'custom_primary' column"))
+      ) {
+        const withoutCustomPrimary = encoded.map((record) => {
+          const fallbackRecord = { ...record } as Record<string, unknown>
+          delete fallbackRecord.custom_primary
+          return fallbackRecord
+        })
+        const { error: fallbackError } = await client
+          .from(table)
+          .upsert(withoutCustomPrimary, { onConflict: 'id' })
+        assertNoError(fallbackError)
+        return
+      }
       assertNoError(error)
     }
   }
@@ -179,6 +236,15 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
         (record) => record,
         'delete',
       )
+      await syncTable(
+        'notebook_entries',
+        current.notebookEntries,
+        next.notebookEntries,
+        (record) => record,
+        'delete',
+      )
+      await syncTable('dashboard_settings', current.dashboardSettings, next.dashboardSettings, (record) => record, 'delete')
+      await syncTable('bulletin_posts', current.bulletinPosts, next.bulletinPosts, (record) => record, 'delete')
       await syncTable(
         'planner_items',
         current.plannerItems,
@@ -286,6 +352,38 @@ export function createSupabaseRepository(userId: string): WorkspaceRepository {
         }),
         'upsert',
       )
+      await syncTable(
+        'notebook_entries',
+        current.notebookEntries,
+        next.notebookEntries,
+        (record) => ({
+          id: record.id,
+          planner_item_id: record.plannerItemId,
+          entry_date: record.entryDate,
+          title: record.title,
+          content: record.content,
+          drawing_data: record.drawingData,
+          created_at: record.createdAt,
+          updated_at: record.updatedAt,
+        }),
+        'upsert',
+      )
+      await syncTable('dashboard_settings', current.dashboardSettings, next.dashboardSettings, (record) => ({
+        id: record.id,
+        cover_image_url: record.coverImageUrl,
+        theme: record.theme,
+        custom_primary: record.customPrimary,
+        updated_at: record.updatedAt,
+      }), 'upsert')
+      await syncTable('bulletin_posts', current.bulletinPosts, next.bulletinPosts, (record) => ({
+        id: record.id,
+        title: record.title,
+        content: record.content,
+        image_url: record.imageUrl,
+        color: record.color,
+        created_at: record.createdAt,
+        updated_at: record.updatedAt,
+      }), 'upsert')
       return load()
     },
   }
