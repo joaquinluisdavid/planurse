@@ -159,7 +159,9 @@ describe('authenticated account boundary', () => {
   })
   it('opens My Profile from the account name in the desktop header', async () => {
     const { user } = mount('/dashboard')
-    await screen.findByRole('heading', { name: 'What’s on your calendar, Alex?' })
+    await screen.findByRole('heading', {
+      name: 'What’s on your calendar, Alex?',
+    })
     await user.click(screen.getByRole('link', { name: 'Open My Profile' }))
     expect(
       await screen.findByRole('heading', { name: 'My Profile' }),
@@ -174,7 +176,6 @@ describe('authenticated account boundary', () => {
     expect(
       screen.getAllByRole('link', { name: 'Create account' })[0],
     ).toHaveAttribute('href', '/signup')
-    await user.click(screen.getAllByRole('link', { name: 'Sign in' })[0])
     await user.click(
       await screen.findByRole('link', { name: 'Forgot password?' }),
     )
@@ -296,7 +297,9 @@ describe('planner interactions with mocked data access', () => {
   })
   it('shows upcoming calendar entries on the dashboard and opens the calendar', async () => {
     const { user } = mount('/dashboard')
-    await screen.findByRole('heading', { name: 'What’s on your calendar, Alex?' })
+    await screen.findByRole('heading', {
+      name: 'What’s on your calendar, Alex?',
+    })
     await user.click(screen.getByRole('link', { name: 'Orientation check-in' }))
     expect(
       await screen.findByRole('heading', { name: 'Calendar & reminders' }),
@@ -441,30 +444,17 @@ describe('planner interactions with mocked data access', () => {
     ).toHaveLength(2)
     expect(await screen.findByText(formatDate(date))).toBeInTheDocument()
   })
-  it('opens the calendar and exposes date-linked reflection and learning actions', async () => {
+  it('selects and focuses a calendar day before opening its entry editor', async () => {
     const { user } = mount('/calendar', repository(emptyRecordWorkspace()))
     await screen.findByRole('heading', { name: 'Calendar & reminders' })
-    await user.click(
-      screen.getAllByRole('link', { name: 'Add learning note' })[0],
-    )
-    expect(
-      await screen.findByRole('heading', { name: 'New learning note' }),
-    ).toBeInTheDocument()
-    expect(screen.getByLabelText('Date')).toHaveValue(localDate())
-    expect(screen.getByText(/Save a note for any date/)).toBeInTheDocument()
-    expect(screen.getByLabelText('Calendar entry (optional)')).toHaveValue(
-      'calendar-reminder-test',
-    )
-    await user.type(
-      screen.getByLabelText('Topic'),
-      'Reflect on planning routine',
-    )
-    await user.click(screen.getByRole('button', { name: 'Save note' }))
-    expect(
-      await screen.findByRole('heading', {
-        name: 'Reflect on planning routine',
-      }),
-    ).toBeInTheDocument()
+    const day = screen.getByRole('gridcell', {
+      name: `Calendar day ${formatDate(localDate())}`,
+    })
+    await user.click(day)
+    expect(day).toHaveFocus()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    await user.click(day)
+    expect(await screen.findByRole('dialog')).toBeInTheDocument()
   })
   it('records a case-handled category and general takeaway without patient details', async () => {
     const { user, source } = mount(
@@ -480,7 +470,7 @@ describe('planner interactions with mocked data access', () => {
       'patient-education',
     )
     await user.type(
-      within(dialog).getByLabelText('General learning takeaway (optional)'),
+      within(dialog).getByLabelText('General learning takeaway'),
       'I adapted the explanation to support clear communication.',
     )
     await user.click(within(dialog).getByRole('button', { name: 'Add entry' }))
@@ -491,13 +481,6 @@ describe('planner interactions with mocked data access', () => {
       ),
     ).toBeInTheDocument()
     expect(source.update).toHaveBeenCalledOnce()
-    await user.click(
-      screen.getAllByRole('link', { name: 'Add learning note' }).at(-1)!,
-    )
-    expect(
-      await screen.findByRole('heading', { name: 'New learning note' }),
-    ).toBeInTheDocument()
-    expect(screen.getByLabelText('Case handled (optional)')).not.toHaveValue('')
   })
   it('creates, edits, and deletes post-shift reflections', async () => {
     const { user } = mount('/reflections', repository(emptyRecordWorkspace()))
@@ -551,11 +534,11 @@ describe('planner interactions with mocked data access', () => {
       'Preparing for a learning check-in',
     )
     await user.type(
-      screen.getByLabelText('Question to explore (optional)'),
+      screen.getByLabelText('Question to explore'),
       'What questions should I bring?',
     )
     await user.type(
-      screen.getByLabelText('Follow-up reminder (optional)'),
+      screen.getByLabelText('Follow-up reminder'),
       'Bring my notes next week',
     )
     await user.click(screen.getByRole('button', { name: 'Save note' }))
@@ -613,7 +596,9 @@ describe('loading, error and empty states', () => {
     ).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Try again' }))
     expect(
-      await screen.findByRole('heading', { name: 'What’s on your calendar, Alex?' }),
+      await screen.findByRole('heading', {
+        name: 'What’s on your calendar, Alex?',
+      }),
     ).toBeInTheDocument()
   })
   it('shows useful empty dashboard and history states', async () => {

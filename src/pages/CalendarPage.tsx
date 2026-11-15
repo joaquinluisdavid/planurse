@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import {
   CalendarDays,
   ChevronLeft,
@@ -104,6 +103,7 @@ export default function CalendarPage() {
   const [busy, setBusy] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [dragged, setDragged] = useState<string | null>(null)
+  const [armedDate, setArmedDate] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<PlannerItem | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
 
@@ -127,6 +127,18 @@ export default function CalendarPage() {
     setErrors({})
     setSaveError(null)
     setEditor('new')
+  }
+  function selectOrOpenDay(key: string, date: Date, target: HTMLElement) {
+    setSelectedDate(key)
+    if (date.getMonth() !== visibleMonth.getMonth())
+      setVisibleMonth(monthStart(date))
+    target.focus()
+    if (armedDate === key) {
+      setArmedDate(null)
+      openNew(key)
+    } else {
+      setArmedDate(key)
+    }
   }
   function openEdit(item: PlannerItem) {
     const linkedCase = workspace.caseRecords.find(
@@ -271,13 +283,13 @@ export default function CalendarPage() {
                   <div
                     key={key}
                     role="gridcell"
+                    tabIndex={0}
                     aria-label={`Calendar day ${formatDate(key)}`}
                     aria-selected={selectedDate === key}
                     onClick={(event) => {
-                      if ((event.target as HTMLElement).closest('button')) return
-                      setSelectedDate(key)
-                      if (!inMonth) setVisibleMonth(monthStart(date))
-                      openNew(key)
+                      if ((event.target as HTMLElement).closest('button'))
+                        return
+                      selectOrOpenDay(key, date, event.currentTarget)
                     }}
                     onDragOver={(event) => event.preventDefault()}
                     onDrop={(event) => {
@@ -290,13 +302,11 @@ export default function CalendarPage() {
                     <button
                       type="button"
                       className={`flex size-8 items-center justify-center rounded-full text-sm ${key === today ? 'bg-primary text-primary-foreground font-semibold' : ''} ${!inMonth ? 'text-muted-foreground' : ''}`}
-                      aria-label={`Add entry for ${formatDate(key)}`}
+                      aria-label={`Select or add entry for ${formatDate(key)}`}
                       aria-pressed={selectedDate === key}
-                      onClick={() => {
-                        setSelectedDate(key)
-                        if (!inMonth) setVisibleMonth(monthStart(date))
-                        openNew(key)
-                      }}
+                      onClick={(event) =>
+                        selectOrOpenDay(key, date, event.currentTarget)
+                      }
                     >
                       {date.getDate()}
                     </button>
@@ -312,7 +322,7 @@ export default function CalendarPage() {
                             setSelectedDate(key)
                             openEdit(item)
                           }}
-                          className={`w-full truncate rounded px-1 py-1 text-left text-[10px] sm:text-xs ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-secondary text-secondary-foreground'} ${item.completedAt ? 'line-through opacity-60' : ''}`}
+                          className={`w-full truncate rounded px-1 py-1 text-left text-[10px] sm:text-xs ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-accent/70 text-accent-foreground'} ${item.completedAt ? 'line-through opacity-60' : ''}`}
                           title={`${item.startTime ? `${timeLabel(item.startTime)} ` : ''}${item.title}`}
                           aria-label={`${item.startTime ? `${timeLabel(item.startTime)} ` : ''}${item.title} on ${formatDate(key)}. Select to edit; drag to reschedule.`}
                         >
@@ -361,33 +371,6 @@ export default function CalendarPage() {
                 Add entry
               </Button>
             </div>
-            <div className="mb-4 flex flex-wrap gap-2">
-              {(() => {
-                const linkedItem = selectedItems[0]
-                const linkedCase = linkedItem
-                  ? workspace.caseRecords.find(
-                      (entry) => entry.plannerItemId === linkedItem.id,
-                    )
-                  : undefined
-                const query = new URLSearchParams({ date: selectedDate })
-                if (linkedItem) query.set('plannerItemId', linkedItem.id)
-                if (linkedCase) query.set('caseRecordId', linkedCase.id)
-                return (
-                  <>
-                    <Button variant="outline" className="min-h-11" asChild>
-                      <Link to={`/learning-notes/new?${query.toString()}`}>
-                        Add learning note
-                      </Link>
-                    </Button>
-                    <Button variant="outline" className="min-h-11" asChild>
-                      <Link to={`/reflections/new?${query.toString()}`}>
-                        Add reflection
-                      </Link>
-                    </Button>
-                  </>
-                )
-              })()}
-            </div>
             {selectedItems.length ? (
               <ul className="space-y-3">
                 {selectedItems.map((item) => (
@@ -403,99 +386,114 @@ export default function CalendarPage() {
                       )
                       return (
                         <>
-                    <div className="flex items-start gap-3">
-                      <span
-                        className={`mt-0.5 rounded-lg p-2 ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-secondary text-secondary-foreground'}`}
-                      >
-                        {item.kind === 'schedule' ? (
-                          <CalendarDays aria-hidden="true" className="size-4" />
-                        ) : (
-                          <ListTodo aria-hidden="true" className="size-4" />
-                        )}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <h3
-                          className={`font-medium ${item.completedAt ? 'text-muted-foreground line-through' : ''}`}
-                        >
-                          {item.title}
-                        </h3>
-                        {item.startTime && (
-                          <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-                            <Clock3 aria-hidden="true" className="size-3" />
-                            {timeRangeLabel(item.startTime, item.endTime)}
-                          </p>
-                        )}
-                        {item.notes && (
-                          <p className="text-muted-foreground mt-2 text-sm whitespace-pre-wrap">
-                            {item.notes}
-                          </p>
-                        )}
-                      </div>
-                      <Badge
-                        variant={
-                          item.kind === 'schedule' ? 'default' : 'secondary'
-                        }
-                      >
-                        {item.kind === 'schedule' ? 'Scheduled' : 'Reminder'}
-                      </Badge>
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="min-h-11"
-                        onClick={async () => {
-                          try {
-                            await update((workspace) =>
-                              completeCalendarEntry(
-                                workspace,
-                                item.id,
-                                !item.completedAt,
-                              ),
-                            )
-                            toast.success(
-                              item.completedAt
-                                ? 'Reminder reopened.'
-                                : 'Reminder completed.',
-                            )
-                          } catch (cause) {
-                            setActionError(errorMessage(cause))
-                          }
-                        }}
-                      >
-                        {item.completedAt ? 'Reopen' : 'Complete'}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="min-h-11"
-                        onClick={() => openEdit(item)}
-                      >
-                        <Pencil aria-hidden="true" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="min-h-11"
-                        onClick={() => setDeleteTarget(item)}
-                      >
-                        <Trash2 aria-hidden="true" />
-                        Delete
-                      </Button>
-                    </div>
-                    {linkedCase && (
-                      <div className="mt-3 border-t pt-3 text-sm">
-                        <p className="font-medium">
-                          Case handled: {linkedCase.category.replaceAll('-', ' ')}
-                        </p>
-                        {linkedCase.learningTakeaway && (
-                          <p className="text-muted-foreground mt-1">
-                            {linkedCase.learningTakeaway}
-                          </p>
-                        )}
-                      </div>
-                    )}
+                          <div className="flex items-start gap-3">
+                            <span
+                              className={`mt-0.5 rounded-lg p-2 ${item.kind === 'schedule' ? 'bg-primary/10 text-primary' : 'bg-accent text-accent-foreground'}`}
+                            >
+                              {item.kind === 'schedule' ? (
+                                <CalendarDays
+                                  aria-hidden="true"
+                                  className="size-4"
+                                />
+                              ) : (
+                                <ListTodo
+                                  aria-hidden="true"
+                                  className="size-4"
+                                />
+                              )}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <h3
+                                className={`font-medium ${item.completedAt ? 'text-muted-foreground line-through' : ''}`}
+                              >
+                                {item.title}
+                              </h3>
+                              {item.startTime && (
+                                <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
+                                  <Clock3
+                                    aria-hidden="true"
+                                    className="size-3"
+                                  />
+                                  {timeRangeLabel(item.startTime, item.endTime)}
+                                </p>
+                              )}
+                              {item.notes && (
+                                <p className="text-muted-foreground mt-2 text-sm whitespace-pre-wrap">
+                                  {item.notes}
+                                </p>
+                              )}
+                            </div>
+                            <Badge
+                              variant="default"
+                              className={
+                                item.kind === 'schedule'
+                                  ? undefined
+                                  : 'bg-accent text-accent-foreground'
+                              }
+                            >
+                              {item.kind === 'schedule'
+                                ? 'Scheduled'
+                                : 'Reminder'}
+                            </Badge>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 border-t pt-3">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="min-h-11"
+                              onClick={async () => {
+                                try {
+                                  await update((workspace) =>
+                                    completeCalendarEntry(
+                                      workspace,
+                                      item.id,
+                                      !item.completedAt,
+                                    ),
+                                  )
+                                  toast.success(
+                                    item.completedAt
+                                      ? 'Reminder reopened.'
+                                      : 'Reminder completed.',
+                                  )
+                                } catch (cause) {
+                                  setActionError(errorMessage(cause))
+                                }
+                              }}
+                            >
+                              {item.completedAt ? 'Reopen' : 'Complete'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="min-h-11"
+                              onClick={() => openEdit(item)}
+                            >
+                              <Pencil aria-hidden="true" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="min-h-11"
+                              onClick={() => setDeleteTarget(item)}
+                            >
+                              <Trash2 aria-hidden="true" />
+                              Delete
+                            </Button>
+                          </div>
+                          {linkedCase && (
+                            <div className="mt-3 border-t pt-3 text-sm">
+                              <p className="font-medium">
+                                Case handled:{' '}
+                                {linkedCase.category.replaceAll('-', ' ')}
+                              </p>
+                              {linkedCase.learningTakeaway && (
+                                <p className="text-muted-foreground mt-1">
+                                  {linkedCase.learningTakeaway}
+                                </p>
+                              )}
+                            </div>
+                          )}
                         </>
                       )
                     })()}
@@ -605,9 +603,7 @@ export default function CalendarPage() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="calendar-start">
-                  Start time
-                </Label>
+                <Label htmlFor="calendar-start">Start time</Label>
                 <Input
                   id="calendar-start"
                   type="time"
@@ -634,9 +630,7 @@ export default function CalendarPage() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="calendar-end">
-                  End time
-                </Label>
+                <Label htmlFor="calendar-end">End time</Label>
                 <Input
                   id="calendar-end"
                   type="time"
@@ -664,7 +658,7 @@ export default function CalendarPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="calendar-notes">Notes (optional)</Label>
+              <Label htmlFor="calendar-notes">Notes</Label>
               <textarea
                 id="calendar-notes"
                 className="border-input focus-visible:ring-ring/50 min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
@@ -716,7 +710,7 @@ export default function CalendarPage() {
               {values.caseCategory && (
                 <div className="space-y-2">
                   <Label htmlFor="calendar-case-takeaway">
-                    General learning takeaway (optional)
+                    General learning takeaway
                   </Label>
                   <textarea
                     id="calendar-case-takeaway"

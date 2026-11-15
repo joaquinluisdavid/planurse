@@ -65,7 +65,7 @@ export default function NewShiftPage() {
       <PageHeader
         eyebrow="Legacy shift history"
         title="Start with a simple plan."
-        description="Starting a shift is optional. For date-first planning and reminders, use Calendar & reminders instead."
+        description="Starting a shift is not required. For date-first planning and reminders, use Calendar & reminders instead."
       />
       {active ? (
         <Card className="max-w-xl shadow-none">

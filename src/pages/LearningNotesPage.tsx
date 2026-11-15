@@ -121,9 +121,7 @@ function LearningNoteForm({
               {errors.entryDate}
             </p>
           )}
-          <Label htmlFor="learning-calendar-item">
-            Calendar entry (optional)
-          </Label>
+          <Label htmlFor="learning-calendar-item">Calendar entry</Label>
           <select
             id="learning-calendar-item"
             className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
@@ -147,7 +145,7 @@ function LearningNoteForm({
               </option>
             ))}
           </select>
-          <Label htmlFor="learning-case-record">Case handled (optional)</Label>
+          <Label htmlFor="learning-case-record">Case handled</Label>
           <select
             id="learning-case-record"
             className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
@@ -172,8 +170,8 @@ function LearningNoteForm({
             ))}
           </select>
           <p className="text-muted-foreground text-xs">
-            Save a note for any date. Optionally connect it to a case-handled
-            category. Never include identifiable case details.
+            Save a note for any date. Connect it to a case-handled category when
+            useful. Never include identifiable case details.
           </p>
         </div>
         {[
@@ -185,21 +183,12 @@ function LearningNoteForm({
           [
             'question',
             'Question to explore',
-            'Optional. Bring clinical questions to a qualified preceptor or approved resource.',
+            'Bring clinical questions to a qualified preceptor or approved resource.',
           ],
-          [
-            'followUp',
-            'Follow-up reminder',
-            'Optional next step or check-in reminder.',
-          ],
+          ['followUp', 'Follow-up reminder', 'Next step or check-in reminder.'],
         ].map(([key, label, hint]) => (
           <div key={key} className="bg-card space-y-2 rounded-xl border p-5">
-            <Label htmlFor={`learning-${key}`}>
-              {label}
-              {key !== 'topic' && (
-                <span className="text-muted-foreground"> (optional)</span>
-              )}
-            </Label>
+            <Label htmlFor={`learning-${key}`}>{label}</Label>
             <textarea
               id={`learning-${key}`}
               className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 min-h-24 w-full rounded-md border bg-transparent px-3 py-2 text-sm focus-visible:ring-[3px] focus-visible:outline-none"

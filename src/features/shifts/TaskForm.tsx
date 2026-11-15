@@ -150,7 +150,7 @@ export function TaskForm({
               name="dueAt"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Due date and time (optional)</FormLabel>
+                  <FormLabel>Due date and time</FormLabel>
                   <FormControl>
                     <Input type="datetime-local" {...field} />
                   </FormControl>

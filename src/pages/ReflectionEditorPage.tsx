@@ -96,9 +96,7 @@ function ReflectionForm({
             {errors.entryDate}
           </p>
         )}
-        <Label htmlFor="reflection-calendar-item">
-          Calendar entry (optional)
-        </Label>
+        <Label htmlFor="reflection-calendar-item">Calendar entry</Label>
         <select
           id="reflection-calendar-item"
           className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
@@ -122,7 +120,7 @@ function ReflectionForm({
             </option>
           ))}
         </select>
-        <Label htmlFor="reflection-case-record">Case handled (optional)</Label>
+        <Label htmlFor="reflection-case-record">Case handled</Label>
         <select
           id="reflection-case-record"
           className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"

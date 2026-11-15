@@ -1,9 +1,14 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { CalendarCheck2, ArrowRight, Eye, EyeOff } from 'lucide-react'
+import {
+  CalendarCheck2,
+  ArrowLeft,
+  ArrowRight,
+  Eye,
+  EyeOff,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { SafetyNotice } from '@/components/SafetyNotice'
 import { ErrorState } from '@/components/Feedback'
 import { useAuth } from '@/auth/useAuth'
 import { isProfileComplete, type UserRole } from '@/auth/useAuth'
@@ -88,13 +93,19 @@ export function AccountEntryPage({
     return <Navigate to="/login" replace />
 
   const title = {
-    welcome: 'A calmer way to plan ahead.',
+    welcome: 'Log in to Planurse.',
     login: 'Welcome back.',
     signup: 'Create your account.',
     onboarding: 'Make room for learning.',
     'forgot-password': 'Reset your password.',
     'update-password': 'Choose a new password.',
   }[mode]
+  const isCredentialMode =
+    mode === 'welcome' ||
+    mode === 'login' ||
+    mode === 'signup' ||
+    mode === 'forgot-password' ||
+    mode === 'update-password'
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!supabase || busy) return
@@ -102,7 +113,7 @@ export function AccountEntryPage({
     setError(null)
     setMessage(null)
     try {
-      if (mode === 'login') {
+      if (mode === 'welcome' || mode === 'login') {
         const { data, error: authError } =
           await supabase.auth.signInWithPassword({
             email: email.trim(),
@@ -176,304 +187,304 @@ export function AccountEntryPage({
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-xl flex-col justify-center gap-6 p-5 py-12">
-      <Link to="/" className="flex items-center gap-2 text-xl font-bold">
-        <CalendarCheck2 aria-hidden="true" className="text-primary size-7" />
-        planurse
-      </Link>
-      <Card className="shadow-none">
-        <CardContent className="p-6 sm:p-8">
-          <p className="text-primary mb-3 text-xs font-semibold tracking-widest uppercase">
-            Plan at your own pace
-          </p>
-          <h1 className="text-3xl font-semibold">{title}</h1>
-          <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
-            {mode === 'onboarding'
-              ? 'Choose your perspective. Your workspace will be associated with your signed-in account.'
-              : mode === 'welcome'
-                ? 'Organize upcoming responsibilities, save reminders, and reflect on learning goals in your account.'
-                : 'Use your Planurse account to access your private workspace.'}
-          </p>
-          {!configured && (
-            <div className="bg-muted my-6 rounded-lg border p-4 text-sm">
-              <strong>Cloud service setup required.</strong>
-              <p className="text-muted-foreground mt-1">
-                Add your Supabase project URL and publishable key to a local{' '}
-                <span className="font-medium">.env</span> file, apply the
-                database migration, and reload. No demo workspace or
-                browser-local account is available.
+    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col justify-center gap-8 px-5 py-8 sm:px-8 sm:py-12 lg:px-16">
+      <header className="flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 text-xl font-bold">
+          <CalendarCheck2 aria-hidden="true" className="text-primary size-7" />
+          planurse
+        </Link>
+        {mode !== 'welcome' && (
+          <Link
+            to="/"
+            aria-label="Back to home"
+            title="Back to home"
+            className="text-muted-foreground hover:text-foreground flex size-10 items-center justify-center rounded-full transition-colors"
+          >
+            <ArrowLeft aria-hidden="true" className="size-5" />
+          </Link>
+        )}
+      </header>
+      <Card
+        className={
+          isCredentialMode
+            ? 'border-primary/20 mx-auto w-full max-w-xl shadow-[0_24px_70px_-38px_rgba(14,116,144,0.55)]'
+            : 'mx-auto w-full max-w-xl shadow-none'
+        }
+      >
+        <CardContent
+          className={isCredentialMode ? 'p-8 sm:p-10' : 'p-6 sm:p-8'}
+        >
+          <div>
+            <h1 className="text-3xl font-semibold">{title}</h1>
+            {mode === 'onboarding' && (
+              <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+                Choose your perspective. Your workspace will be associated with
+                your signed-in account.
               </p>
-            </div>
-          )}
-          {error && (
-            <div className="my-4">
-              <ErrorState message={error} />
-            </div>
-          )}
-          {message && (
-            <p
-              role="status"
-              className="bg-secondary my-4 rounded-lg p-4 text-sm"
-            >
-              {message}
-            </p>
-          )}
-
-          {mode === 'onboarding' ? (
-            <form className="mt-6" onSubmit={completeOnboarding}>
-              <fieldset className="space-y-3" disabled={busy || !configured}>
-                <legend className="mb-3 text-sm font-semibold">
-                  I am using Planurse as a...
-                </legend>
-                {roleChoices.map((option) => (
-                  <label
-                    key={option.value}
-                    className="has-[:checked]:border-primary has-[:checked]:bg-secondary flex cursor-pointer items-center gap-3 rounded-lg border p-4"
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={option.value}
-                      checked={selected === option.value}
-                      onChange={() => setSelected(option.value)}
-                      className="accent-primary size-4"
-                    />
-                    <span>
-                      <span className="block text-sm font-semibold">
-                        {option.label}
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {option.detail}
-                      </span>
-                    </span>
-                  </label>
-                ))}
-              </fieldset>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <label
-                    htmlFor="profile-first-name"
-                    className="text-sm font-medium"
-                  >
-                    First name
-                  </label>
-                  <input
-                    id="profile-first-name"
-                    required
-                    maxLength={80}
-                    autoComplete="given-name"
-                    value={firstName}
-                    onChange={(event) => setFirstName(event.target.value)}
-                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
-                    disabled={busy || !configured}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="profile-last-name"
-                    className="text-sm font-medium"
-                  >
-                    Last name
-                  </label>
-                  <input
-                    id="profile-last-name"
-                    required
-                    maxLength={80}
-                    autoComplete="family-name"
-                    value={lastName}
-                    onChange={(event) => setLastName(event.target.value)}
-                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
-                    disabled={busy || !configured}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="profile-nickname"
-                    className="text-sm font-medium"
-                  >
-                    Nickname{' '}
-                    <span className="text-muted-foreground">
-                      (optional display name)
-                    </span>
-                  </label>
-                  <input
-                    id="profile-nickname"
-                    maxLength={60}
-                    autoComplete="nickname"
-                    value={nickname}
-                    onChange={(event) => setNickname(event.target.value)}
-                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
-                    disabled={busy || !configured}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label
-                    htmlFor="profile-position"
-                    className="text-sm font-medium"
-                  >
-                    Current position{' '}
-                    <span className="text-muted-foreground">(optional)</span>
-                  </label>
-                  <input
-                    id="profile-position"
-                    maxLength={100}
-                    autoComplete="organization-title"
-                    placeholder="e.g. Staff Nurse"
-                    value={position}
-                    onChange={(event) => setPosition(event.target.value)}
-                    className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
-                    disabled={busy || !configured}
-                  />
-                </div>
+            )}
+            {!configured && (
+              <div className="bg-muted my-6 rounded-lg border p-4 text-sm">
+                <strong>Cloud service setup required.</strong>
+                <p className="text-muted-foreground mt-1">
+                  Add your Supabase project URL and publishable key to a local{' '}
+                  <span className="font-medium">.env</span> file, apply the
+                  database migration, and reload. No demo workspace or
+                  browser-local account is available.
+                </p>
               </div>
-              <Button
-                type="submit"
-                className="mt-6 h-12 w-full"
-                disabled={busy || !configured}
+            )}
+            {error && (
+              <div className="my-4">
+                <ErrorState message={error} />
+              </div>
+            )}
+            {message && (
+              <p
+                role="status"
+                className="bg-secondary my-4 rounded-lg p-4 text-sm"
               >
-                {busy ? 'Saving…' : 'Save profile'}
-                <ArrowRight aria-hidden="true" />
-              </Button>
-            </form>
-          ) : mode === 'welcome' ? (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              <Button asChild className="h-12">
-                <Link to="/signup">
-                  Create account
-                  <ArrowRight aria-hidden="true" />
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="h-12">
-                <Link to="/login">Sign in</Link>
-              </Button>
-            </div>
-          ) : (
-            <form className="mt-6 space-y-4" onSubmit={submit}>
-              {mode !== 'update-password' && (
-                <div className="space-y-2">
-                  <label
-                    htmlFor="account-email"
-                    className="text-sm font-medium"
-                  >
-                    Email
-                  </label>
-                  <input
-                    id="account-email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    maxLength={254}
-                    value={email}
-                    onChange={(event) => setEmail(event.target.value)}
-                    className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
-                    disabled={busy || !configured}
-                  />
-                </div>
-              )}
-              {mode !== 'forgot-password' && (
-                <div className="space-y-2">
-                  <label
-                    htmlFor="account-password"
-                    className="text-sm font-medium"
-                  >
-                    {mode === 'update-password' ? 'New password' : 'Password'}
-                  </label>
-                  <div className="relative">
+                {message}
+              </p>
+            )}
+
+            {mode === 'onboarding' ? (
+              <form className="mt-6" onSubmit={completeOnboarding}>
+                <fieldset className="space-y-3" disabled={busy || !configured}>
+                  <legend className="mb-3 text-sm font-semibold">
+                    I am using Planurse as a...
+                  </legend>
+                  {roleChoices.map((option) => (
+                    <label
+                      key={option.value}
+                      className="has-[:checked]:border-primary has-[:checked]:bg-secondary flex cursor-pointer items-center gap-3 rounded-lg border p-4"
+                    >
+                      <input
+                        type="radio"
+                        name="role"
+                        value={option.value}
+                        checked={selected === option.value}
+                        onChange={() => setSelected(option.value)}
+                        className="accent-primary size-4"
+                      />
+                      <span>
+                        <span className="block text-sm font-semibold">
+                          {option.label}
+                        </span>
+                        <span className="text-muted-foreground text-xs">
+                          {option.detail}
+                        </span>
+                      </span>
+                    </label>
+                  ))}
+                </fieldset>
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="profile-first-name"
+                      className="text-sm font-medium"
+                    >
+                      First name
+                    </label>
                     <input
-                      id="account-password"
-                      type={passwordVisible ? 'text' : 'password'}
-                      autoComplete={
-                        mode === 'signup'
-                          ? 'new-password'
-                          : mode === 'update-password'
-                            ? 'new-password'
-                            : 'current-password'
-                      }
+                      id="profile-first-name"
                       required
-                      minLength={8}
-                      maxLength={128}
-                      value={password}
-                      onChange={(event) => setPassword(event.target.value)}
-                      className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 pr-12 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+                      maxLength={80}
+                      autoComplete="given-name"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                      className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
                       disabled={busy || !configured}
                     />
-                    <button
-                      type="button"
-                      className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-r-md focus-visible:ring-[3px] focus-visible:outline-none"
-                      aria-label={
-                        passwordVisible ? 'Hide password' : 'Show password'
-                      }
-                      aria-pressed={passwordVisible}
-                      onClick={() => setPasswordVisible((visible) => !visible)}
-                    >
-                      {passwordVisible ? (
-                        <EyeOff aria-hidden="true" className="size-4" />
-                      ) : (
-                        <Eye aria-hidden="true" className="size-4" />
-                      )}
-                    </button>
                   </div>
-                  <p className="text-muted-foreground text-xs">
-                    Use at least 8 characters.
-                  </p>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="profile-last-name"
+                      className="text-sm font-medium"
+                    >
+                      Last name
+                    </label>
+                    <input
+                      id="profile-last-name"
+                      required
+                      maxLength={80}
+                      autoComplete="family-name"
+                      value={lastName}
+                      onChange={(event) => setLastName(event.target.value)}
+                      className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                      disabled={busy || !configured}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="profile-nickname"
+                      className="text-sm font-medium"
+                    >
+                      Nickname
+                    </label>
+                    <input
+                      id="profile-nickname"
+                      maxLength={60}
+                      autoComplete="nickname"
+                      value={nickname}
+                      onChange={(event) => setNickname(event.target.value)}
+                      className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                      disabled={busy || !configured}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="profile-position"
+                      className="text-sm font-medium"
+                    >
+                      Current position
+                    </label>
+                    <input
+                      id="profile-position"
+                      maxLength={100}
+                      autoComplete="organization-title"
+                      placeholder="e.g. Staff Nurse"
+                      value={position}
+                      onChange={(event) => setPosition(event.target.value)}
+                      className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+                      disabled={busy || !configured}
+                    />
+                  </div>
                 </div>
-              )}
-              <Button
-                type="submit"
-                className="h-12 w-full"
-                disabled={busy || !configured}
-              >
-                {busy
-                  ? 'Please wait…'
-                  : mode === 'login'
-                    ? 'Sign in'
-                    : mode === 'signup'
-                      ? 'Create account'
-                      : mode === 'forgot-password'
-                        ? 'Send reset link'
-                        : 'Update password'}
-                <ArrowRight aria-hidden="true" />
+                <Button
+                  type="submit"
+                  className="mt-6 h-12 w-full"
+                  disabled={busy || !configured}
+                >
+                  {busy ? 'Saving…' : 'Save profile'}
+                  <ArrowRight aria-hidden="true" />
+                </Button>
+              </form>
+            ) : (
+              <form className="mt-6 space-y-4" onSubmit={submit}>
+                {mode !== 'update-password' && (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="account-email"
+                      className="text-sm font-medium"
+                    >
+                      Email
+                    </label>
+                    <input
+                      id="account-email"
+                      type="email"
+                      autoComplete="email"
+                      required
+                      maxLength={254}
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+                      disabled={busy || !configured}
+                    />
+                  </div>
+                )}
+                {mode !== 'forgot-password' && (
+                  <div className="space-y-2">
+                    <label
+                      htmlFor="account-password"
+                      className="text-sm font-medium"
+                    >
+                      {mode === 'update-password' ? 'New password' : 'Password'}
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="account-password"
+                        type={passwordVisible ? 'text' : 'password'}
+                        autoComplete={
+                          mode === 'signup'
+                            ? 'new-password'
+                            : mode === 'update-password'
+                              ? 'new-password'
+                              : 'current-password'
+                        }
+                        required
+                        minLength={8}
+                        maxLength={128}
+                        value={password}
+                        onChange={(event) => setPassword(event.target.value)}
+                        className="border-input bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-11 w-full rounded-md border px-3 pr-12 text-sm focus-visible:ring-[3px] focus-visible:outline-none"
+                        disabled={busy || !configured}
+                      />
+                      <button
+                        type="button"
+                        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring absolute inset-y-0 right-0 flex min-h-11 w-11 items-center justify-center rounded-r-md focus-visible:ring-[3px] focus-visible:outline-none"
+                        aria-label={
+                          passwordVisible ? 'Hide password' : 'Show password'
+                        }
+                        aria-pressed={passwordVisible}
+                        onClick={() =>
+                          setPasswordVisible((visible) => !visible)
+                        }
+                      >
+                        {passwordVisible ? (
+                          <EyeOff aria-hidden="true" className="size-4" />
+                        ) : (
+                          <Eye aria-hidden="true" className="size-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      Use at least 8 characters.
+                    </p>
+                  </div>
+                )}
+                <Button
+                  type="submit"
+                  className="h-12 w-full"
+                  disabled={busy || !configured}
+                >
+                  {busy
+                    ? 'Please wait…'
+                    : mode === 'welcome' || mode === 'login'
+                      ? 'Sign in'
+                      : mode === 'signup'
+                        ? 'Create account'
+                        : mode === 'forgot-password'
+                          ? 'Send reset link'
+                          : 'Update password'}
+                  <ArrowRight aria-hidden="true" />
+                </Button>
+                {(mode === 'welcome' || mode === 'login') && (
+                  <p className="text-center text-sm">
+                    <Link
+                      className="text-primary underline"
+                      to="/forgot-password"
+                    >
+                      Forgot password?
+                    </Link>
+                  </p>
+                )}
+              </form>
+            )}
+            {(mode === 'welcome' || mode === 'login') && (
+              <Button asChild variant="outline" className="mt-8 h-12 w-full">
+                <Link to="/signup" aria-label="Create account">
+                  Create a new account
+                </Link>
               </Button>
-              {mode === 'login' && (
-                <p className="text-center text-sm">
-                  <Link
-                    className="text-primary underline"
-                    to="/forgot-password"
-                  >
-                    Forgot password?
-                  </Link>
-                </p>
-              )}
-            </form>
-          )}
-          {mode === 'login' && (
-            <p className="text-muted-foreground mt-5 text-center text-sm">
-              New to Planurse?{' '}
-              <Link className="text-primary underline" to="/signup">
-                Create an account
-              </Link>
-            </p>
-          )}
-          {mode === 'signup' && (
-            <p className="text-muted-foreground mt-5 text-center text-sm">
-              Already have an account?{' '}
-              <Link className="text-primary underline" to="/login">
-                Sign in
-              </Link>
-            </p>
-          )}
-          {mode === 'forgot-password' && (
-            <p className="text-muted-foreground mt-5 text-center text-sm">
-              <Link className="text-primary underline" to="/login">
-                Return to sign in
-              </Link>
-            </p>
-          )}
+            )}
+            {mode === 'signup' && (
+              <p className="text-muted-foreground mt-5 text-center text-sm">
+                Already have an account?{' '}
+                <Link className="text-primary underline" to="/login">
+                  Sign in
+                </Link>
+              </p>
+            )}
+            {mode === 'forgot-password' && (
+              <p className="text-muted-foreground mt-5 text-center text-sm">
+                <Link className="text-primary underline" to="/login">
+                  Return to sign in
+                </Link>
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
-      <footer className="mt-2">
-        <SafetyNotice />
-      </footer>
     </main>
   )
 }
