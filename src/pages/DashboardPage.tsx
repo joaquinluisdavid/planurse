@@ -17,7 +17,13 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/Feedback'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useWorkspace } from '@/data/useWorkspace'
 import { useAuth } from '@/auth/useAuth'
 import { useNow } from '@/lib/useNow'
@@ -29,12 +35,16 @@ export default function DashboardPage() {
   const now = useNow()
   const [customizeOpen, setCustomizeOpen] = useState(false)
   const [bulletinOpen, setBulletinOpen] = useState(false)
-  const [editingBulletinId, setEditingBulletinId] = useState<string | null>(null)
+  const [editingBulletinId, setEditingBulletinId] = useState<string | null>(
+    null,
+  )
   const [coverImageUrl, setCoverImageUrl] = useState('')
   const [bulletinTitle, setBulletinTitle] = useState('')
   const [bulletinContent, setBulletinContent] = useState('')
   const [bulletinImageUrl, setBulletinImageUrl] = useState('')
-  const [bulletinColor, setBulletinColor] = useState<'yellow' | 'blue' | 'pink' | 'green'>('yellow')
+  const [bulletinColor, setBulletinColor] = useState<
+    'yellow' | 'blue' | 'pink' | 'green'
+  >('yellow')
   const [customizeError, setCustomizeError] = useState<string | null>(null)
   if (loading) return <LoadingState />
   if (error || !data)
@@ -61,9 +71,14 @@ export default function DashboardPage() {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
     .slice(0, 3)
   const displayName =
-    profile?.nickname.trim() || profile?.firstName.trim() || user?.email?.split('@')[0] || 'there'
+    profile?.nickname.trim() ||
+    profile?.firstName.trim() ||
+    user?.email?.split('@')[0] ||
+    'there'
   const settings = data.dashboardSettings[0]
-  const bulletinPosts = [...data.bulletinPosts].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  const bulletinPosts = [...data.bulletinPosts].sort((a, b) =>
+    b.updatedAt.localeCompare(a.updatedAt),
+  )
   function readImage(file: File, onRead: (value: string) => void) {
     if (!file.type.startsWith('image/')) {
       setCustomizeError('Choose an image file.')
@@ -83,18 +98,22 @@ export default function DashboardPage() {
     try {
       await update((workspace) => ({
         ...workspace,
-        dashboardSettings: [{
-          id: user?.id ?? '',
-          userId: user?.id ?? '',
-          coverImageUrl: nextCoverImageUrl.trim(),
-          theme: settings?.theme ?? 'ocean',
-          customPrimary: settings?.customPrimary ?? '#0e7490',
-          updatedAt: new Date().toISOString(),
-        }],
+        dashboardSettings: [
+          {
+            id: user?.id ?? '',
+            userId: user?.id ?? '',
+            coverImageUrl: nextCoverImageUrl.trim(),
+            theme: settings?.theme ?? 'ocean',
+            customPrimary: settings?.customPrimary ?? '#0e7490',
+            updatedAt: new Date().toISOString(),
+          },
+        ],
       }))
       setCustomizeOpen(false)
     } catch (cause) {
-      setCustomizeError(cause instanceof Error ? cause.message : 'Cannot save cover image.')
+      setCustomizeError(
+        cause instanceof Error ? cause.message : 'Cannot save cover image.',
+      )
     }
   }
   async function addBulletinPost() {
@@ -111,8 +130,9 @@ export default function DashboardPage() {
           imageUrl: bulletinImageUrl.trim(),
           color: bulletinColor,
           createdAt:
-            workspace.bulletinPosts.find((item) => item.id === editingBulletinId)
-              ?.createdAt ?? now,
+            workspace.bulletinPosts.find(
+              (item) => item.id === editingBulletinId,
+            )?.createdAt ?? now,
           updatedAt: now,
         }
         return {
@@ -130,7 +150,9 @@ export default function DashboardPage() {
       setEditingBulletinId(null)
       setBulletinOpen(false)
     } catch (cause) {
-      setCustomizeError(cause instanceof Error ? cause.message : 'Cannot add bulletin note.')
+      setCustomizeError(
+        cause instanceof Error ? cause.message : 'Cannot add bulletin note.',
+      )
     }
   }
   function editBulletinPost(id: string) {
@@ -166,7 +188,7 @@ export default function DashboardPage() {
   return (
     <>
       <section
-        className="relative mb-6 min-h-48 overflow-hidden rounded-2xl border bg-[#dce9ef] p-6 sm:p-8"
+        className="border-border bg-background relative mb-6 min-h-48 overflow-hidden rounded-2xl border p-6 sm:p-8"
         style={{
           backgroundImage: settings?.coverImageUrl
             ? `linear-gradient(90deg, rgba(17,24,39,.72), rgba(17,24,39,.15)), url(${settings.coverImageUrl})`
@@ -178,13 +200,20 @@ export default function DashboardPage() {
                   ? 'repeating-linear-gradient(120deg, #ffffff 0, #ffffff 24px, #f0f0f0 24px, #f0f0f0 48px)'
                   : settings?.theme === 'ocean'
                     ? 'repeating-linear-gradient(120deg, #d8edf2 0, #d8edf2 24px, #c5dce3 24px, #c5dce3 48px)'
-                    : 'repeating-linear-gradient(120deg, #eaf2ff 0, #eaf2ff 24px, #dce9fb 24px, #dce9fb 48px)',
+                    : 'repeating-linear-gradient(120deg, color-mix(in srgb, var(--primary) 8%, var(--background)) 0, color-mix(in srgb, var(--primary) 8%, var(--background)) 24px, color-mix(in srgb, var(--primary) 16%, var(--background)) 24px, color-mix(in srgb, var(--primary) 16%, var(--background)) 48px)',
           backgroundPosition: 'center',
           backgroundSize: 'cover',
         }}
       >
         <div className="relative flex min-h-32 items-end justify-end text-white">
-          <Button variant="secondary" className="w-fit" onClick={() => { setCoverImageUrl(settings?.coverImageUrl ?? ''); setCustomizeOpen(true) }}>
+          <Button
+            variant="outline"
+            className="text-foreground border-border/80 bg-background/90 hover:text-primary w-fit hover:bg-[color-mix(in_srgb,var(--primary)_14%,var(--background))]"
+            onClick={() => {
+              setCoverImageUrl(settings?.coverImageUrl ?? '')
+              setCustomizeOpen(true)
+            }}
+          >
             <Settings2 aria-hidden="true" />
             Customize cover
           </Button>
@@ -204,29 +233,68 @@ export default function DashboardPage() {
       >
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="flex items-center gap-2 text-lg font-semibold text-[#3d2c1e]"><Pin aria-hidden="true" className="size-5" /> Bulletin board</h2>
-            <p className="mt-1 text-sm text-[#5e4935]">Keep a few small reminders, intentions, or encouraging notes in view.</p>
+            <h2 className="flex items-center gap-2 text-lg font-semibold text-[#3d2c1e]">
+              <Pin aria-hidden="true" className="size-5" /> Bulletin board
+            </h2>
+            <p className="mt-1 text-sm text-[#5e4935]">
+              Keep a few small reminders, intentions, or encouraging notes in
+              view.
+            </p>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {bulletinPosts.map((post, index) => (
-            <Card key={post.id} style={{ transform: `rotate(${[-1, 1, -0.5, 0.75][index % 4]}deg)` }} className={`relative shadow-md ${post.color === 'blue' ? 'bg-[#c6e0ed]' : post.color === 'pink' ? 'bg-[#f2c5ce]' : post.color === 'green' ? 'bg-[#c6dfbe]' : 'bg-[#f6dda0]'}`}>
+            <Card
+              key={post.id}
+              style={{
+                transform: `rotate(${[-1, 1, -0.5, 0.75][index % 4]}deg)`,
+              }}
+              className={`relative shadow-md ${post.color === 'blue' ? 'bg-[#c6e0ed]' : post.color === 'pink' ? 'bg-[#f2c5ce]' : post.color === 'green' ? 'bg-[#c6dfbe]' : 'bg-[#f6dda0]'}`}
+            >
               <span
                 className={`absolute -top-2 left-1/2 z-10 size-4 -translate-x-1/2 rounded-full border shadow-sm ${post.color === 'blue' ? 'border-[#347ca4] bg-[#4f9fc7]' : post.color === 'pink' ? 'border-[#b84f69] bg-[#d96b83]' : post.color === 'green' ? 'border-[#4d8c49] bg-[#70ad67]' : 'border-[#b17b18] bg-[#e3ad32]'}`}
                 aria-hidden="true"
               />
               <CardContent className="relative p-4">
                 <div className="absolute top-2 right-2 flex gap-1">
-                  <Button variant="ghost" size="icon" className="size-8" aria-label={`Edit ${post.title}`} onClick={() => editBulletinPost(post.id)}><Pencil aria-hidden="true" className="size-4" /></Button>
-                  <Button variant="ghost" size="icon" className="size-8" aria-label={`Delete ${post.title}`} onClick={() => void removeBulletinPost(post.id)}><Trash2 aria-hidden="true" className="size-4" /></Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label={`Edit ${post.title}`}
+                    onClick={() => editBulletinPost(post.id)}
+                  >
+                    <Pencil aria-hidden="true" className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label={`Delete ${post.title}`}
+                    onClick={() => void removeBulletinPost(post.id)}
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                  </Button>
                 </div>
                 <h3 className="pr-8 font-semibold">{post.title}</h3>
-                {post.imageUrl && <img src={post.imageUrl} alt="" className="mt-3 aspect-video w-full rounded-md object-cover" />}
-                <p className="mt-2 whitespace-pre-wrap text-sm">{post.content}</p>
+                {post.imageUrl && (
+                  <img
+                    src={post.imageUrl}
+                    alt=""
+                    className="mt-3 aspect-video w-full rounded-md object-cover"
+                  />
+                )}
+                <p className="mt-2 text-sm whitespace-pre-wrap">
+                  {post.content}
+                </p>
               </CardContent>
             </Card>
           ))}
-          <button type="button" className="border-[#8f7048] text-[#5e4935] hover:bg-[#d7b986] flex min-h-36 items-center justify-center rounded-xl border-2 border-dashed text-sm font-medium" onClick={openNewBulletin}>
+          <button
+            type="button"
+            className="flex min-h-36 items-center justify-center rounded-xl border-2 border-dashed border-[#8f7048] text-sm font-medium text-[#5e4935] hover:bg-[#d7b986]"
+            onClick={openNewBulletin}
+          >
             <Plus aria-hidden="true" className="mr-2 size-4" />
             Add note
           </button>
@@ -350,8 +418,7 @@ export default function DashboardPage() {
             <CardContent className="p-5">
               <h2 className="mb-3 text-lg font-semibold">Capture a moment</h2>
               <p className="text-muted-foreground mb-4 text-sm">
-                Add a reminder or keep a notebook page whenever it
-                feels useful.
+                Add a reminder or keep a notebook page whenever it feels useful.
               </p>
               <div className="grid gap-2">
                 {[
@@ -381,11 +448,10 @@ export default function DashboardPage() {
           <Card className="gap-0 py-0 shadow-none">
             <CardContent className="p-5">
               <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Recent journal entries</h2>
-                <Link
-                  to="/notebook"
-                  className="text-primary text-sm underline"
-                >
+                <h2 className="text-lg font-semibold">
+                  Recent journal entries
+                </h2>
+                <Link to="/notebook" className="text-primary text-sm underline">
                   View all
                 </Link>
               </div>
@@ -421,7 +487,9 @@ export default function DashboardPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Customize your cover</DialogTitle>
-            <DialogDescription>Choose an image file to give your planner a personal cover.</DialogDescription>
+            <DialogDescription>
+              Choose an image file to give your planner a personal cover.
+            </DialogDescription>
           </DialogHeader>
           <div
             className="relative aspect-[2.8/1] overflow-hidden rounded-xl border bg-[#dce9ef]"
@@ -441,12 +509,32 @@ export default function DashboardPage() {
             <label className="border-input bg-background hover:bg-secondary flex h-10 cursor-pointer items-center gap-2 rounded-md border px-3 text-sm font-medium">
               <ImagePlus aria-hidden="true" className="size-4" />
               Choose image
-              <input type="file" accept="image/*" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) readImage(file, setCoverImageUrl) }} />
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file) readImage(file, setCoverImageUrl)
+                }}
+              />
             </label>
-            {coverImageUrl && <Button variant="ghost" size="icon" aria-label="Remove cover image" title="Remove cover image" onClick={() => setCoverImageUrl('')}><Trash2 aria-hidden="true" className="size-4" /></Button>}
+            {coverImageUrl && (
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Remove cover image"
+                title="Remove cover image"
+                onClick={() => setCoverImageUrl('')}
+              >
+                <Trash2 aria-hidden="true" className="size-4" />
+              </Button>
+            )}
           </div>
           <div className="flex flex-wrap justify-end gap-3">
-            <Button variant="outline" onClick={() => setCustomizeOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setCustomizeOpen(false)}>
+              Cancel
+            </Button>
             <Button onClick={() => void saveCover()}>Save cover</Button>
           </div>
         </DialogContent>
@@ -454,24 +542,54 @@ export default function DashboardPage() {
       <Dialog open={bulletinOpen} onOpenChange={setBulletinOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingBulletinId ? 'Edit bulletin note' : 'Add bulletin note'}</DialogTitle>
-            <DialogDescription>{editingBulletinId ? 'Update this pinned note.' : 'Pin a short thought, reminder, or image to your Overview.'}</DialogDescription>
+            <DialogTitle>
+              {editingBulletinId ? 'Edit bulletin note' : 'Add bulletin note'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingBulletinId
+                ? 'Update this pinned note.'
+                : 'Pin a short thought, reminder, or image to your Overview.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <input className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm" placeholder="Note title" value={bulletinTitle} onChange={(event) => setBulletinTitle(event.target.value)} maxLength={80} />
-            <textarea className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm" placeholder="Write your note..." value={bulletinContent} onChange={(event) => setBulletinContent(event.target.value)} maxLength={500} />
+            <input
+              className="border-input bg-background h-11 w-full rounded-md border px-3 text-sm"
+              placeholder="Note title"
+              value={bulletinTitle}
+              onChange={(event) => setBulletinTitle(event.target.value)}
+              maxLength={80}
+            />
+            <textarea
+              className="border-input bg-background min-h-28 w-full rounded-md border px-3 py-2 text-sm"
+              placeholder="Write your note..."
+              value={bulletinContent}
+              onChange={(event) => setBulletinContent(event.target.value)}
+              maxLength={500}
+            />
             <div className="flex items-center justify-between gap-3">
-              <label className="border-input bg-background text-muted-foreground hover:text-foreground flex size-10 cursor-pointer items-center justify-center rounded-md border" title="Add image">
+              <label
+                className="border-input bg-background text-muted-foreground hover:text-foreground flex size-10 cursor-pointer items-center justify-center rounded-md border"
+                title="Add image"
+              >
                 <ImagePlus aria-hidden="true" className="size-4" />
                 <span className="sr-only">Add image to bulletin note</span>
-                <input type="file" accept="image/*" className="sr-only" onChange={(event) => { const file = event.target.files?.[0]; if (file) readImage(file, setBulletinImageUrl) }} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) readImage(file, setBulletinImageUrl)
+                  }}
+                />
               </label>
               <details className="relative" aria-label="Bulletin note color">
                 <summary className="border-input bg-background flex h-10 cursor-pointer list-none items-center gap-2 rounded-md border px-3 text-sm marker:hidden">
                   <span
                     className={`size-4 rounded-full ${bulletinColor === 'blue' ? 'bg-[#4f9fc7]' : bulletinColor === 'pink' ? 'bg-[#d96b83]' : bulletinColor === 'green' ? 'bg-[#70ad67]' : 'bg-[#e3ad32]'}`}
                   />
-                  {bulletinColor.charAt(0).toUpperCase() + bulletinColor.slice(1)}
+                  {bulletinColor.charAt(0).toUpperCase() +
+                    bulletinColor.slice(1)}
                 </summary>
                 <div className="border-input bg-popover absolute right-0 bottom-12 z-20 min-w-36 rounded-lg border p-1 shadow-lg">
                   {[
@@ -491,16 +609,42 @@ export default function DashboardPage() {
                         if (menu) menu.open = false
                       }}
                     >
-                      <span className="size-5 rounded-full" style={{ backgroundColor: swatch }} />
+                      <span
+                        className="size-5 rounded-full"
+                        style={{ backgroundColor: swatch }}
+                      />
                       {label}
                     </button>
                   ))}
                 </div>
               </details>
             </div>
-            {bulletinImageUrl && <p className="text-muted-foreground text-xs">Image selected</p>}
+            {bulletinImageUrl && (
+              <p className="text-muted-foreground text-xs">Image selected</p>
+            )}
           </div>
-          <div className="flex justify-end gap-3"><Button variant="outline" onClick={() => { setBulletinOpen(false); setEditingBulletinId(null) }}>Cancel</Button><Button onClick={() => void addBulletinPost()} disabled={!bulletinTitle.trim() || !bulletinContent.trim()}>{editingBulletinId ? <Pencil aria-hidden="true" /> : <Plus aria-hidden="true" />}{editingBulletinId ? 'Save changes' : 'Pin note'}</Button></div>
+          <div className="flex justify-end gap-3">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setBulletinOpen(false)
+                setEditingBulletinId(null)
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => void addBulletinPost()}
+              disabled={!bulletinTitle.trim() || !bulletinContent.trim()}
+            >
+              {editingBulletinId ? (
+                <Pencil aria-hidden="true" />
+              ) : (
+                <Plus aria-hidden="true" />
+              )}
+              {editingBulletinId ? 'Save changes' : 'Pin note'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>
